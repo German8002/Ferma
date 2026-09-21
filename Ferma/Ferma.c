@@ -2,8 +2,8 @@
 #include <stdio.h>
 int main()
 {
-	SetConsoleCP(1251);
-	SetConsoleOutputCP(1251);
+	SetConsoleCP(65001);
+	SetConsoleOutputCP(65001);
 	int current_day = 1;
 	int current_hour = 8;
 	int inventory[10] = { 0,1,2,3,4,5,6,7,8,9 };
@@ -12,51 +12,51 @@ int main()
 	int add_time = 0;
 	do
 	{
-		printf("[0] Âûõîä \n");
-		printf("[1] Ïîñìîòğåòü íà ÷àñû \n");
-		printf("[2] Ïğîìîòàòü âğåìÿ (Ïîğàáîòàòü) \n");
-		printf("[3] Ïîñìîòğåòü èíâåíòàğü \n");
-		printf("[4] Ïîëîæèòü ïğåäìåò â ñëîò \n");
-		printf("[5] Âûáğîñèòü ïğåäìåò \n");
+		printf("[0] Ğ’Ñ‹Ñ…Ğ¾Ğ´ \n");
+		printf("[1] ĞŸĞ¾ÑĞ¼Ğ¾Ñ‚Ñ€ĞµÑ‚ÑŒ Ğ½Ğ° Ñ‡Ğ°ÑÑ‹ \n");
+		printf("[2] ĞŸÑ€Ğ¾Ğ¼Ğ¾Ñ‚Ğ°Ñ‚ÑŒ Ğ²Ñ€ĞµĞ¼Ñ (ĞŸĞ¾Ñ€Ğ°Ğ±Ğ¾Ñ‚Ğ°Ñ‚ÑŒ) \n");
+		printf("[3] ĞŸĞ¾ÑĞ¼Ğ¾Ñ‚Ñ€ĞµÑ‚ÑŒ Ğ¸Ğ½Ğ²ĞµĞ½Ñ‚Ğ°Ñ€ÑŒ \n");
+		printf("[4] ĞŸĞ¾Ğ»Ğ¾Ğ¶Ğ¸Ñ‚ÑŒ Ğ¿Ñ€ĞµĞ´Ğ¼ĞµÑ‚ Ğ² ÑĞ»Ğ¾Ñ‚ \n");
+		printf("[5] Ğ’Ñ‹Ğ±Ñ€Ğ¾ÑĞ¸Ñ‚ÑŒ Ğ¿Ñ€ĞµĞ´Ğ¼ĞµÑ‚ \n");
 		scanf("%d", &userAction);
 		switch (userAction)
 		{
 		case 1:
 		{
-			printf("Òåêóùåå âğåìÿ: %d äåíü %d ÷àñ\n", current_day, current_hour);
+			printf("Ğ¢ĞµĞºÑƒÑ‰ĞµĞµ Ğ²Ñ€ĞµĞ¼Ñ: %d Ğ´ĞµĞ½ÑŒ %d Ñ‡Ğ°Ñ\n", current_day, current_hour);
 			break;
 		}
 		case 2:
 		{
-			printf("Ñêîëüêî âğåìåíè âû õîòèòå ïîòğàòèòü íà ğàáîòó?\n");
+			printf("Ğ¡ĞºĞ¾Ğ»ÑŒĞºĞ¾ Ğ²Ñ€ĞµĞ¼ĞµĞ½Ğ¸ Ğ²Ñ‹ Ñ…Ğ¾Ñ‚Ğ¸Ñ‚Ğµ Ğ¿Ğ¾Ñ‚Ñ€Ğ°Ñ‚Ğ¸Ñ‚ÑŒ Ğ½Ğ° Ñ€Ğ°Ğ±Ğ¾Ñ‚Ñƒ?\n");
 			scanf("%d", &add_time);
 			current_hour = current_hour + add_time;
 			while (current_hour >= 24)
 			{
 				current_hour = current_hour - 24;
+				current_day++;
 			}
-			printf("%d %d", current_day, current_hour);
 			break;
 		}
 		case 3:
 		{
 			for (int i = 0; i < 10; i++)
 			{
-				printf("Ñëîò [%d]: \n", inventory[i]);
+				printf("Ğ¡Ğ»Ğ¾Ñ‚ [%d]: \n", inventory[i]);
 			}
 			break;
 		}
 		case 4:
-			printf("òóò ïîêà íè÷åãî íåò");
+			printf("Ñ‚ÑƒÑ‚ Ğ¿Ğ¾ĞºĞ° Ğ½Ğ¸Ñ‡ĞµĞ³Ğ¾ Ğ½ĞµÑ‚");
 		case 5:
-			printf("òóò ïîêà íè÷åãî íåò");
+			printf("Ñ‚ÑƒÑ‚ Ğ¿Ğ¾ĞºĞ° Ğ½Ğ¸Ñ‡ĞµĞ³Ğ¾ Ğ½ĞµÑ‚");
 		case 6:
-			printf("òóò ïîêà íè÷åãî íåò");
+			printf("Ñ‚ÑƒÑ‚ Ğ¿Ğ¾ĞºĞ° Ğ½Ğ¸Ñ‡ĞµĞ³Ğ¾ Ğ½ĞµÑ‚");
 		case 0:
 			break;
 		default:
-			printf("Íåâåğíûé ââîä");
+			printf("ĞĞµĞ²ĞµÑ€Ğ½Ñ‹Ğ¹ Ğ²Ğ²Ğ¾Ğ´");
 		}
 	} while (userAction != 0);
-	printf("Ïîêà-ïîêà!");
+	printf("ĞŸĞ¾ĞºĞ°-Ğ¿Ğ¾ĞºĞ°!");
 }
