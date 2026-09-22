@@ -8,4 +8,8 @@
 !README*
 !*.md
 
+!*.sln
+!*.vcxproj
+!*.vcxproj.filters
+
 !.gitignore
