@@ -6,7 +6,7 @@ int main()
 	SetConsoleOutputCP(65001);
 	int current_day = 1;
 	int current_hour = 8;
-	int inventory[10] = { 0,1,2,3,4,5,6,7,8,9 };
+	int inventory[10] = { 0 };
 	int userAction;
 	int stamina = 0;
 	int add_time = 0;
