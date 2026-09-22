@@ -1,11 +1,11 @@
 #define _CRT_SECURE_NO_WARNINGS
 #include <stdio.h>
-int fool_check(int scanf_result) //Проверка на дурака
+int fool_check(int scanf_result) //Проверка на дурака.
 {
 	char c;
-	while ((c = getchar()) != '\n' && c != EOF); //Чистим буфер
+	while ((c = getchar()) != '\n' && c != EOF); //Чистим буфер.
 
-	if (scanf_result != 1) { //Сама проверка
+	if (scanf_result != 1) { //Сама проверка.
 		printf("Не целое число.\n");
 		return 0;
 	}
@@ -13,9 +13,9 @@ int fool_check(int scanf_result) //Проверка на дурака
 }
 int main()
 {
-	SetConsoleCP(65001); //Эта, а также следующая строчка были созданы для грамматной работы консоли(у меня работает только так))
+	SetConsoleCP(65001); //Эта, а также следующая строчка были созданы для грамматной работы консоли(у меня работает только так)).
 	SetConsoleOutputCP(65001);
-	int current_day = 1; //Инициализируем переменные
+	int current_day = 1; //Инициализируем переменные.
 	int current_hour = 8;
 	int inventory[10] = { 0 };
 	int userAction = -1;
@@ -29,7 +29,7 @@ int main()
 		printf("[3] Посмотреть инвентарь \n");
 		printf("[4] Положить предмет в слот \n");
 		printf("[5] Выбросить предмет \n");
-		if (!fool_check(scanf("%d", &userAction))) //Запрашиваем пункт меню с проверкой на дурака
+		if (!fool_check(scanf("%d", &userAction))) //Запрашиваем пункт меню с проверкой на дурака.
 		{
 			continue;
 		}
@@ -43,7 +43,7 @@ int main()
 		case 2:
 		{
 			printf("Сколько времени вы хотите потратить на работу?\n");
-			if (!fool_check(scanf("%d", &add_time))); //Запрашиваем время, которое человек желает потратить на работу. Делаем это с проверкой на дурака
+			if (!fool_check(scanf("%d", &add_time))); //Запрашиваем время, которое человек желает потратить на работу. Делаем это с проверкой на дурака.
 			current_hour = current_hour + add_time;
 			while (current_hour >= 24)
 			{
@@ -71,6 +71,6 @@ int main()
 		default:
 			printf("Неверный ввод");
 		}
-	} while (userAction != 0); // Условие для do-while
+	} while (userAction != 0); // Условие для do-while.
 	printf("Пока-пока!");
 }
