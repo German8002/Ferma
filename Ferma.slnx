@@ -1,7 +1,0 @@
-<Solution>
-  <Configurations>
-    <Platform Name="x64" />
-    <Platform Name="x86" />
-  </Configurations>
-  <Project Path="Ferma/Ferma.vcxproj" Id="79bfab98-8cc4-4c0b-9b43-b5530c0f63e4" />
-</Solution>
