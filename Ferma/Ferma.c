@@ -11,13 +11,16 @@ int fool_check(int scanf_result) //Проверка на дурака
 	}
 	return 1;
 }
+
 int main()
 {
-	SetConsoleCP(65001); //Эта, а также следующая строчка были созданы для грамматной работы консоли(у меня работает только так))
+	SetConsoleCP(65001); //Эта, а также следующая строчка были созданы для грамматной работы консоли(у меня работает только так)
 	SetConsoleOutputCP(65001);
-	int current_day = 1; //Инициализируем переменные
+	int current_day = 1; //Инициализируем переменные и массив
 	int current_hour = 8;
 	int inventory[10] = { 0 };
+	for (int n = 0; n < 10; n++)
+		inventory[n] = n;
 	int userAction = -1;
 	int stamina = 0;
 	int add_time = 0;
@@ -54,16 +57,50 @@ int main()
 		}
 		case 3:
 		{
+			char* item = "";
 			for (int i = 0; i < 10; i++)
 			{
-				printf("Слот [%d]: \n", inventory[i]);
+				if (inventory[i] == 0)
+					item = "";
+				else if (inventory[i] == 1)
+					item = "Дерево";
+				else if (inventory[i] == 2)
+					item = "Камень";
+				else if (inventory[i] == 3)
+					item = "Семена";
+				else if (inventory[i] == 4)
+					item = "Ведро с водой";
+				else if (inventory[i] == 5)
+					item = "Пустое ведро";
+				else if (inventory[i] == 6)
+					item = "Морковь";
+				else if (inventory[i] == 7)
+					item = "Яйца";
+				else if (inventory[i] == 8)
+					item = "Пшеница";
+				else if (inventory[i] == 9)
+					item = "Молоко";
+				printf("Слот %d: [%d] ( %s ) \n", i, inventory[i], item);
 			}
 			break;
 		}
 		case 4:
 			printf("тут пока ничего нет");
 		case 5:
-			printf("тут пока ничего нет");
+		{
+			int drop_choice;
+			printf("Введите слот, предмет из которого нужно выбросить(от 0 до 9).\n");
+			scanf("%d", &drop_choice);
+			if (drop_choice > 0 && drop_choice < 9)
+			{
+				inventory[drop_choice] = 0;
+			}
+			else
+			{
+				printf("Вы ввели неверное число");
+			}
+			break;
+		}
 		case 6:
 			printf("тут пока ничего нет");
 		case 0:
