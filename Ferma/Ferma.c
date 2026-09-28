@@ -2,7 +2,7 @@
 #include <stdio.h>
 int fool_check(int scanf_result) //Проверка на дурака
 {
-	char c;
+	int c;
 	while ((c = getchar()) != '\n' && c != EOF); //Чистим буфер
 
 	if (scanf_result != 1) { //Сама проверка
@@ -22,7 +22,6 @@ int main()
 	for (int n = 0; n < 10; n++)
 		inventory[n] = n;
 	int userAction = -1;
-	int stamina = 0;
 	int add_time = 0;
 	do
 	{
@@ -32,6 +31,7 @@ int main()
 		printf("[3] Посмотреть инвентарь \n");
 		printf("[4] Положить предмет в слот \n");
 		printf("[5] Выбросить предмет \n");
+		printf("[6] Уникальные находки \n");
 		if (!fool_check(scanf("%d", &userAction))) //Запрашиваем пункт меню с проверкой на дурака
 		{
 			continue;
@@ -46,19 +46,24 @@ int main()
 		case 2:
 		{
 			printf("Сколько времени вы хотите потратить на работу?\n");
-			if (!fool_check(scanf("%d", &add_time))); //Запрашиваем время, которое человек желает потратить на работу. Делаем это с проверкой на дурака
-			current_hour = current_hour + add_time;
-			while (current_hour >= 24)
+			if (!fool_check(scanf("%d", &add_time))) //Запрашиваем время, которое человек желает потратить на работу. Делаем это с проверкой на дурака
 			{
-				current_hour = current_hour - 24;
-				current_day++;
+				continue;
+			}
+			{
+				current_hour = current_hour + add_time;
+				while (current_hour >= 24)
+				{
+					current_hour = current_hour - 24;
+					current_day++;
+				}
 			}
 			break;
 		}
 		case 3:
 		{
-			char* item = "";
-			for (int i = 0; i < 10; i++)
+			char* item = "";//Создаём массив символов(строку)
+			for (int i = 0; i < 10; i++)//Проверяем каждый элемент массива и присваеваем ему соответствующее название.
 			{
 				if (inventory[i] == 0)
 					item = "";
@@ -80,33 +85,69 @@ int main()
 					item = "Пшеница";
 				else if (inventory[i] == 9)
 					item = "Молоко";
-				printf("Слот %d: [%d] ( %s ) \n", i, inventory[i], item);
+				printf("Слот %d: [%d] ( %s ) \n", i, inventory[i], item);//Выводим номер слота, ID предмета и его название
 			}
 			break;
 		}
 		case 4:
-			printf("тут пока ничего нет");
+		{
+			int item_id;//Определяем переменные
+			int slot_id;
+			printf("Выберите слот, в который хотите положить предмет.\n");
+			if (!fool_check(scanf("%d", &slot_id)))//Запрашиваем слот, в который нужно положить предмет.Делаем это с провркой на дурака
+			{
+				continue;
+			}
+			printf("Выберите ID предмета, которы хотите положить в этот слот.\n");
+			if (!fool_check(scanf("%d", &item_id)))//Запрашиваем ID предмета, который нужно положить в указанный слот.Тоже проверка на дурака
+			{
+				continue;
+			}
+			if (item_id >= 0 && item_id < 10 && slot_id >= 0 && slot_id < 10)//Проверяем, не ошибся ли пользователь в ID или номере слота
+				inventory[slot_id] = item_id;//Присваиваем элементу значение, указанное пользователем
+			else
+				printf("Вы ввели неправильное значение слота или ID предмета.\n");
+			break;
+		}
 		case 5:
 		{
 			int drop_choice;
 			printf("Введите слот, предмет из которого нужно выбросить(от 0 до 9).\n");
-			scanf("%d", &drop_choice);
-			if (drop_choice > 0 && drop_choice < 9)
+			if (!fool_check(scanf("%d", &drop_choice)))//Запрашиваем слот, из которого нужно выбросить предметы
 			{
-				inventory[drop_choice] = 0;
+				continue;
+			}
+			if (drop_choice >= 0 && drop_choice < 10)//Проверяем, указал ли пользователь допустимый слот
+			{
+				inventory[drop_choice] = 0;//Обнуляем этот слот
 			}
 			else
 			{
-				printf("Вы ввели неверное число");
+				printf("Вы ввели неверное значение.\n");
 			}
 			break;
 		}
 		case 6:
-			printf("тут пока ничего нет");
+		{
+			int counts[10] = { 0 }; //Создаём массив-счётчик, в который будут записываться повторы
+			for (int i = 0; i < 10; i++)
+			{
+				if (inventory[i] != 0)//Если элемент не пустой(не равен нулю), то считаем
+					counts[inventory[i]]++;
+			}
+
+			printf("Уникальные находки:\n");
+			for (int id = 1; id < 10; id++)
+			{
+				if (counts[id] > 0)//Выводим, если повторов не ноль.
+					printf("ID предмета: %d, количество повторов: %d\n", id, counts[id]);
+			}
+			break;
+		}
 		case 0:
 			break;
 		default:
-			printf("Неверный ввод");
+			printf("Неверный ввод\n");
 		}
 	} while (userAction != 0); // Условие для do-while
 	printf("Пока-пока!");
