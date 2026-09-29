@@ -68,10 +68,8 @@ int main()
 				switch (inventory[i])
 				{
 					case 0:
-					{
 						item = "";
 						break;
-					}
 					case 1:
 						item = "Дерево";
 						break;
