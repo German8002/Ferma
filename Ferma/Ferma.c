@@ -50,6 +50,7 @@ int main()
 			{
 				continue;
 			}
+			if (add_time > 0)
 			{
 				current_hour = current_hour + add_time;
 				while (current_hour >= 24)
@@ -58,6 +59,8 @@ int main()
 					current_day++;
 				}
 			}
+			else
+				printf("Вы ввели число меньше нуля\n");
 			break;
 		}
 		case 3:
