@@ -62,30 +62,45 @@ int main()
 		}
 		case 3:
 		{
-			char* item = "";//Создаём массив символов(строку)
-			for (int i = 0; i < 10; i++)//Проверяем каждый элемент массива и присваеваем ему соответствующее название.
+			char* item = "";//Создаём литерал
+			for (int i = 0; i < 10; i++)
 			{
-				if (inventory[i] == 0)
-					item = "";
-				else if (inventory[i] == 1)
-					item = "Дерево";
-				else if (inventory[i] == 2)
-					item = "Камень";
-				else if (inventory[i] == 3)
-					item = "Семена";
-				else if (inventory[i] == 4)
-					item = "Ведро с водой";
-				else if (inventory[i] == 5)
-					item = "Пустое ведро";
-				else if (inventory[i] == 6)
-					item = "Морковь";
-				else if (inventory[i] == 7)
-					item = "Яйца";
-				else if (inventory[i] == 8)
-					item = "Пшеница";
-				else if (inventory[i] == 9)
-					item = "Молоко";
-				printf("Слот %d: [%d] ( %s ) \n", i, inventory[i], item);//Выводим номер слота, ID предмета и его название
+				switch (inventory[i])
+				{
+					case 0:
+					{
+						item = "";
+						break;
+					}
+					case 1:
+						item = "Дерево";
+						break;
+					case 2:
+						item = "Семена";
+						break;
+					case 3:
+						item = "Ведро с водой";
+						break;
+					case 4:
+						item = "Пустое ведро";
+						break;
+					case 5:
+						item = "Пустое ведро";
+						break;
+					case 6:
+						item = "Морковь";
+						break;
+					case 7:
+						item = "Яйца";
+						break;
+					case 8:
+						item = "Пшеница";
+						break;
+					case 9:
+						item = "Молоко";
+						break;
+				}
+			printf("Слот %d: [%d] ( %s ) \n", i, inventory[i], item);
 			}
 			break;
 		}
