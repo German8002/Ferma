@@ -1,5 +1,7 @@
 #define _CRT_SECURE_NO_WARNINGS
 #include <stdio.h>
+#define INVENTORY_SIZE 10
+#define MAX_FARMER_NAME 32
 int fool_check(int scanf_result) //Проверка на дурака
 {
 	int c;
@@ -18,13 +20,17 @@ int main()
 	SetConsoleOutputCP(65001);
 	int current_day = 1; //Инициализируем переменные и массив
 	int current_hour = 8;
-	int inventory[10] = { 0 };
+	int inventory[INVENTORY_SIZE] = { 0 };
 	for (int n = 0; n < 10; n++)
 		inventory[n] = n;
 	int userAction = -1;
 	int add_time = 0;
+	char farmer_name[MAX_FARMER_NAME];
+	printf("Введите имя фермера: ");
+	scanf("%31s", farmer_name);
 	do
 	{
+		printf("Привет, %s !\n", farmer_name); //Выводим имя фермера
 		printf("[0] Выход \n"); //Выводим меню
 		printf("[1] Посмотреть на часы \n");
 		printf("[2] Промотать время (Поработать) \n");
@@ -77,16 +83,16 @@ int main()
 						item = "Дерево";
 						break;
 					case 2:
-						item = "Семена";
+						item = "Камень";
 						break;
 					case 3:
-						item = "Ведро с водой";
+						item = "Семена";
 						break;
 					case 4:
 						item = "Пустое ведро";
 						break;
 					case 5:
-						item = "Пустое ведро";
+						item = "Ведро с водой";
 						break;
 					case 6:
 						item = "Морковь";
