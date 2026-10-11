@@ -4,6 +4,7 @@
 
 !*.c
 !*.h
+!items.txt
 
 !README*
 !*.md

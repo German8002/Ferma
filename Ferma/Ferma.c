@@ -2,6 +2,45 @@
 #include <stdio.h>
 #define INVENTORY_SIZE 10
 #define MAX_FARMER_NAME 32
+#define MAX_ITEMS 10
+#define MAX_NAME_LEN 32
+int current_day = 1; //Инициализируем переменные и массив
+int current_hour = 8;
+int inventory[INVENTORY_SIZE] = { 0,1,2,3,4,5,6,7,8,9 };
+int add_time = 0;
+char farmer_name[MAX_FARMER_NAME];
+char item_names[MAX_ITEMS][MAX_NAME_LEN];
+void read_file(void)
+{
+	strcpy(item_names[0], "Пусто");
+	strcpy(item_names[1], "Дерево");
+	strcpy(item_names[2], "Камень");
+	strcpy(item_names[3], "Семена");
+	strcpy(item_names[4], "Пустое ведро");
+	strcpy(item_names[5], "Ведро с водой");
+	strcpy(item_names[6], "Морковь");
+	strcpy(item_names[7], "Яйца");
+	strcpy(item_names[8], "Пшеница");
+	strcpy(item_names[9], "Молоко");
+	FILE* f = fopen("items.txt", "r");
+	if (f == NULL)
+	{
+		printf("Не удалось считать/найти items.txt\n");
+		return;
+	}
+	{
+		int id;
+		char name[MAX_NAME_LEN];
+		while (fscanf(f, "%d %31s", &id, name) == 2) 
+		{
+			if (id >= 0 && id < MAX_ITEMS) 
+			{
+				strcpy(item_names[id], name);
+			}
+		}
+		fclose(f);
+	}
+}
 int fool_check(int scanf_result) //Проверка на дурака
 {
 	int c;
@@ -13,19 +52,12 @@ int fool_check(int scanf_result) //Проверка на дурака
 	}
 	return 1;
 }
-
 int main()
 {
 	SetConsoleCP(65001); //Эта, а также следующая строчка были созданы для грамматной работы консоли(у меня работает только так)
 	SetConsoleOutputCP(65001);
-	int current_day = 1; //Инициализируем переменные и массив
-	int current_hour = 8;
-	int inventory[INVENTORY_SIZE] = { 0 };
-	for (int n = 0; n < 10; n++)
-		inventory[n] = n;
+	read_file();
 	int userAction = -1;
-	int add_time = 0;
-	char farmer_name[MAX_FARMER_NAME];
 	printf("Введите имя фермера: ");
 	scanf("%31s", farmer_name);
 	do
