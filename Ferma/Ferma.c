@@ -1,12 +1,11 @@
 #define _CRT_SECURE_NO_WARNINGS
 #include <stdio.h>
-#define INVENTORY_SIZE 10
 #define MAX_FARMER_NAME 32
 #define MAX_ITEMS 10
 #define MAX_NAME_LEN 32
 int current_day = 1; //Инициализируем переменные и массив
 int current_hour = 8;
-int inventory[INVENTORY_SIZE] = { 0,1,2,3,4,5,6,7,8,9 };
+int inventory[MAX_ITEMS] = { 0,1,2,3,4,5,6,7,8,9 };
 int add_time = 0;
 char farmer_name[MAX_FARMER_NAME];
 char item_names[MAX_ITEMS][MAX_NAME_LEN];
@@ -39,6 +38,21 @@ void read_file(void)
 			}
 		}
 		fclose(f);
+	}
+}
+void read_inventory(void)
+{
+	for (int i = 0; i < MAX_ITEMS; i++)
+	{
+		int id = inventory[i];
+		if (id >= 0 && id < MAX_ITEMS)
+		{
+			printf("Слот %d: [%d] - %s\n", i, id, item_names[id]);
+		}
+		else
+		{
+			printf("Слот %d: [%d] - Неизвестный предмет\n", i, id);
+		}
 	}
 }
 int fool_check(int scanf_result) //Проверка на дурака
@@ -103,44 +117,7 @@ int main()
 		}
 		case 3:
 		{
-			char* item = "";//Создаём литерал
-			for (int i = 0; i < 10; i++)
-			{
-				switch (inventory[i])
-				{
-					case 0:
-						item = "";
-						break;
-					case 1:
-						item = "Дерево";
-						break;
-					case 2:
-						item = "Камень";
-						break;
-					case 3:
-						item = "Семена";
-						break;
-					case 4:
-						item = "Пустое ведро";
-						break;
-					case 5:
-						item = "Ведро с водой";
-						break;
-					case 6:
-						item = "Морковь";
-						break;
-					case 7:
-						item = "Яйца";
-						break;
-					case 8:
-						item = "Пшеница";
-						break;
-					case 9:
-						item = "Молоко";
-						break;
-				}
-			printf("Слот %d: [%d] ( %s ) \n", i, inventory[i], item);
-			}
+			read_inventory();
 			break;
 		}
 		case 4:
