@@ -1,5 +1,6 @@
 #define _CRT_SECURE_NO_WARNINGS
 #include <stdio.h>
+#include <string.h>
 #define MAX_FARMER_NAME 32
 #define MAX_ITEMS 10
 #define MAX_NAME_LEN 32
@@ -79,7 +80,38 @@ void read_inventory(void)
 
 void compare_items(void)
 {
+	char item_to_compare[MAX_NAME_LEN];
 	printf("Введите название предмета, который хотите найти: ");
+	scanf("%31s", item_to_compare);
+	int found_id = -1;
+	for (int id = 0; id < MAX_ITEMS; id++)
+	{
+		if (strcmp(item_names[id], item_to_compare) == 0)
+		{
+			found_id = id;
+			break;
+		}
+	}
+	if (found_id == -1)
+	{
+		printf("Предмет с названием \"%s\" не найден.\n", item_to_compare);
+		return;
+	}
+	int found = 0;
+	printf("Предмет \"%s\" (ID: %d) найден в слотах: ", item_names[found_id], found_id);
+	for (int i = 0; i < MAX_ITEMS; i++)
+	{
+		if (inventory[i] == found_id)
+		{
+			printf("%d ", i);
+			found = 1;
+		}
+	}
+	if (!found)
+	{
+		printf("нет");
+	}
+	printf("\n");
 }
 
 void time_printer(void)
@@ -161,6 +193,7 @@ void unique_finder(void)
 			printf("ID предмета: %d, количество повторов: %d\n", id, counts[id]);
 	}
 }
+
 int main()
 {
 	SetConsoleCP(65001); //Эта, а также следующая строчка были созданы для грамматной работы консоли(у меня работает только так)
@@ -219,6 +252,7 @@ int main()
 		}
 		case 7:
 		{
+			compare_items();
 			break;
 		}
 		case 8:
