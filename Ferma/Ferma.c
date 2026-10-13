@@ -114,6 +114,31 @@ void compare_items(void)
 	printf("\n");
 }
 
+void diary_writer(void)
+{
+	FILE* f = fopen("diary.txt", "a");
+	if (f == NULL)
+	{
+		printf("Не удалось считать/найти файл.");
+		return;
+	}
+	fprintf(f, "Фермер:%s\n", farmer_name);
+	fprintf(f, "День: %d, Час: %d\n", current_day, current_hour);
+	fprintf(f, "Инвентарь:\n");
+	for (int i = 0; i < MAX_ITEMS; i++)
+	{
+		int id = inventory[i];
+		if (id >= 0 && id < MAX_ITEMS)
+		{
+			fprintf(f,"Слот %d: [%d] - %s\n", i, id, item_names[id]);
+		}
+		else
+		{
+			fprintf(f,"Слот %d: [%d] - Неизвестный предмет\n", i, id);
+		}
+	}
+	fclose(f);
+}
 void time_printer(void)
 {
 	printf("Текущее время: %d день %d час\n", current_day, current_hour);
@@ -257,6 +282,7 @@ int main()
 		}
 		case 8:
 		{
+			diary_writer();
 			break;
 		}
 		case 9:

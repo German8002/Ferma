@@ -5,6 +5,7 @@
 !*.c
 !*.h
 !items.txt
+!diary.txt
 
 !README*
 !*.md
