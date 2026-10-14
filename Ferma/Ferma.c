@@ -1,6 +1,7 @@
 #define _CRT_SECURE_NO_WARNINGS
 #include <stdio.h>
 #include <string.h>
+#include <ctype.h>
 #define MAX_FARMER_NAME 32
 #define MAX_ITEMS 10
 #define MAX_NAME_LEN 32
@@ -139,6 +140,7 @@ void diary_writer(void)
 	}
 	fclose(f);
 }
+
 void time_printer(void)
 {
 	printf("Текущее время: %d день %d час\n", current_day, current_hour);
@@ -149,7 +151,7 @@ void time_winder(void)
 	printf("Сколько времени вы хотите потратить на работу?\n");
 	if (!fool_check(scanf("%d", &add_time))) //Запрашиваем время, которое человек желает потратить на работу. Делаем это с проверкой на дурака
 	{
-		return 0;
+		return;
 	}
 	if (add_time > 0)
 	{
@@ -190,7 +192,7 @@ void item_drop(void)
 	printf("Введите слот, предмет из которого нужно выбросить(от 0 до 9).\n");
 	if (!fool_check(scanf("%d", &drop_choice)))//Запрашиваем слот, из которого нужно выбросить предметы
 	{
-		return 0;
+		return ;
 	}
 	if (drop_choice >= 0 && drop_choice < 10)//Проверяем, указал ли пользователь допустимый слот
 	{
@@ -219,6 +221,42 @@ void unique_finder(void)
 	}
 }
 
+void map_unpacker(void)
+{
+	FILE* f = fopen("input.txt", "r");
+	if (f == NULL)
+	{
+		printf("Не удалось считать/найти input.txt\n");
+		return;
+	}
+	int undifined_char;
+	char difined_char;
+	int number = 0;
+
+	while ((undifined_char = fgetc(f)) != EOF)
+	{
+		if (isdigit(undifined_char))
+		{
+			number = undifined_char - '0';
+		}
+		else if (undifined_char == '\n')
+		{
+			printf("\n");
+			number = 0;
+		}
+		else if (undifined_char != '\n' && undifined_char != '\r')
+		{
+			difined_char = (char)undifined_char;
+			for (int i = 0; i < number; i++)
+			{
+				printf("%c", difined_char);
+			}
+			number = 0;
+		}
+	}
+	printf("\n");
+	fclose(f);
+}
 int main()
 {
 	SetConsoleCP(65001); //Эта, а также следующая строчка были созданы для грамматной работы консоли(у меня работает только так)
@@ -287,6 +325,7 @@ int main()
 		}
 		case 9:
 		{
+			map_unpacker();
 			break;
 		}
 		case 0:
