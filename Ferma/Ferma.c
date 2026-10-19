@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <ctype.h>
+#include <stdlib.h>
 #define MAX_FARMER_NAME 32
 #define MAX_ITEMS 10
 #define MAX_NAME_LEN 32
@@ -27,8 +28,43 @@ int fool_check(int scanf_result) //Проверка на дурака
 
 void naming(void)
 {
-	printf("Введите имя фермера:");
-	scanf("%31s", farmer_name);
+	for (;;)//бесконечный цикл for
+	{
+		printf("Введите имя фермера:");
+		fflush(stdout);
+
+		if (fgets(farmer_name, sizeof(farmer_name), stdin) == NULL)
+		{
+			printf("\nВвод прерван.\n");
+			farmer_name[0] = '\0';
+			return;
+		}
+
+		size_t len = strlen(farmer_name);
+
+		if (len > 0 && farmer_name[len - 1] == '\n') //Убираем перевод строки
+		{
+			farmer_name[--len] = '\0';
+		}
+		else
+		{
+			int c = getchar();
+			if (c != '\n' && c != EOF)//Проверка на символ, если последний - не конец строки/перевод - ошибка
+			{
+				while (c != '\n' && c != EOF) c = getchar();
+				printf("Слишком длинное имя. Максимум %d символов.\n", MAX_FARMER_NAME - 1);
+				continue;
+			}
+		}
+
+		if (len == 0)
+		{
+			printf("Имя не может быть пустым. Попробуйте снова.\n");
+			continue;
+		}
+
+		return; //Имя корректно: 1-31 символ
+	}
 }
 
 void read_file(void)
@@ -117,7 +153,7 @@ void compare_items(void)
 
 void diary_writer(void)
 {
-	FILE* f = fopen("diary.txt", "a");
+	FILE* f = fopen("diary.txt", "a");//открываем файл для дозаписи
 	if (f == NULL)
 	{
 		printf("Не удалось считать/найти файл.");
@@ -223,40 +259,70 @@ void unique_finder(void)
 
 void map_unpacker(void)
 {
-	FILE* f = fopen("input.txt", "r");
-	if (f == NULL)
-	{
-		printf("Не удалось считать/найти input.txt\n");
-		return;
-	}
-	int undifined_char;
-	char difined_char;
-	int number = 0;
+	FILE* in = fopen("input.txt", "r");
+	if (!in) { printf("Нет input.txt\n"); return; }
 
-	while ((undifined_char = fgetc(f)) != EOF)
+	int cap = 1024, size = 0;//Динамический буфер для карты
+	char* map = (char*)malloc(cap);
+
+	int c, num = 0, has_num = 0;//Переменные для RLE-распаковки
+
+	int len = 0, expected = -1, line = 1, error = 0;//Переменные для проверки геометрии
+
+	while ((c = fgetc(in)) != EOF)//Читаем и распаковываем весь файл
 	{
-		if (isdigit(undifined_char))
-		{
-			number = undifined_char - '0';
+		if (isdigit(c)) {//Определяем, если число
+			num = num * 10 + (c - '0');//Считам десятки, сотни и т.д.
+			has_num = 1;//Запмсываем, что это число
 		}
-		else if (undifined_char == '\n')
-		{
-			printf("\n");
-			number = 0;
+		else if (c == '\n') {// Проверка длины строки
+			if (expected < 0) expected = len;
+			else if (len != expected) { error = 1; break; }
+
+			if (size + 1 >= cap) { cap *= 2; map = (char*)realloc(map, cap); }// Сохраняем перевод строки
+			map[size++] = '\n';
+
+			len = 0; num = 0; has_num = 0; line++;// Сброс строки
 		}
-		else if (undifined_char != '\n' && undifined_char != '\r')
-		{
-			difined_char = (char)undifined_char;
-			for (int i = 0; i < number; i++)
-			{
-				printf("%c", difined_char);
+		else {
+			int reps = has_num ? num : 1;// Повторяем символ (если числа не было — 1 раз)
+			for (int i = 0; i < reps; i++) {
+				if (size + 1 >= cap) { cap *= 2; map = (char*)realloc(map, cap); }
+				map[size++] = (char)c;
+				len++;
 			}
-			number = 0;
+			num = 0; has_num = 0;//обнуляем число
 		}
 	}
-	printf("\n");
-	fclose(f);
+
+	if (!error && len > 0) {// Проверка последней строки, если она без '\n'
+		if (expected < 0) expected = len;
+		else if (len != expected) error = 1;
+		else {
+			if (size + 1 >= cap) { cap *= 2; map = (char*)realloc(map, cap); }//Расширяем массив, если размер не выходит
+			map[size++] = '\n';
+		}
+	}
+
+	map[size] = '\0'; // Завершаем строку для вывода
+	fclose(in);
+
+	FILE* out = fopen("output.txt", "w");// Вывод результата
+	if (out) {
+		if (error) {
+			printf("Ошибка в строке %d: длина %d, ожидалось %d\n", line, len, expected);
+			fprintf(out, "Ошибка в строке %d: длина %d, ожидалось %d\n", line, len, expected);
+		}
+		else {
+			printf("%s", map);
+			fprintf(out, "%s", map);
+			printf("Готово. Результат в output.txt\n");
+		}
+		fclose(out);
+	}
+	free(map);
 }
+
 int main()
 {
 	SetConsoleCP(65001); //Эта, а также следующая строчка были созданы для грамматной работы консоли(у меня работает только так)
