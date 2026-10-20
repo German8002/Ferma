@@ -73,8 +73,8 @@ void read_file(void)
 	strcpy(item_names[1], "Дерево");
 	strcpy(item_names[2], "Камень");
 	strcpy(item_names[3], "Семена");
-	strcpy(item_names[4], "Пустое ведро");
-	strcpy(item_names[5], "Ведро с водой");
+	strcpy(item_names[4], "Ведро");
+	strcpy(item_names[5], "Картошка");
 	strcpy(item_names[6], "Морковь");
 	strcpy(item_names[7], "Яйца");
 	strcpy(item_names[8], "Пшеница");
@@ -119,7 +119,8 @@ void compare_items(void)
 {
 	char item_to_compare[MAX_NAME_LEN];
 	printf("Введите название предмета, который хотите найти: ");
-	scanf("%31s", item_to_compare);
+	fgets(item_to_compare, sizeof(item_to_compare), stdin);
+	item_to_compare[strcspn(item_to_compare, "\n")] = '\0';
 	int found_id = -1;
 	for (int id = 0; id < MAX_ITEMS; id++)
 	{
