@@ -325,6 +325,93 @@ void map_unpacker(void)
 	free(map);
 }
 
+void print_map(char** map, int height, int width, int player_y, int player_x) //Значения переменных(и указателей) даются в основной функции
+{
+	system("cls"); //Очищаем экран перед каждым показом
+	for (int i = 0; i < height; i++)
+	{
+		for (int j = 0; j < width; j++)
+		{
+			if (i == player_y && j == player_x)
+			{
+				printf("@"); //Рисуем героя
+			}
+			else {
+				printf("%c", map[i][j]);
+			}
+		}
+		printf("\n");
+	}
+}
+
+void free_map(char** map, int height)
+{
+	for (int i = 0; i < height; i++)
+	{
+		free(map[i]); //Освобождаем каждую строку
+	}
+	free(map); //Освобождаем список адресов строк
+}
+
+void generate_map(char*** map_ptr, int* out_height, int* out_width, int* out_y, int* out_x) // Создаёт этаж целиком
+{
+	int height = rand() % 26 + 5; //от 5 до 30(Высота)
+	int width = rand() % 26 + 5; //Длина
+	*out_height = height;
+	*out_width = width;
+
+	char** map = (char**)malloc(height * sizeof(char*)); //Память под список строк
+	for (int i = 0; i < height; i++)
+	{
+		map[i] = (char*)malloc(width * sizeof(char)); //Память под каждую строку
+	}
+	*map_ptr = map;
+
+	for (int i = 0; i < height; i++)// Наполнение карты
+	{
+		for (int j = 0; j < width; j++)
+		{
+			if (i == 0 || i == height - 1 || j == 0 || j == width - 1)//Выставляем стены
+			{
+				map[i][j] = '#';
+			}
+			else
+			{
+				int chance = rand() % 100;
+				if (chance < 15) map[i][j] = 'T'; //15% дерево(Откуда оно в башне?Ну, я не знаю)
+				else if (chance < 25) map[i][j] = 'R'; //10% камень
+				else map[i][j] = '.';
+			}
+		}
+	}
+
+	int y = rand() % (height - 2) + 1;//Выставляем "D" и "U"
+	int x = rand() % (width - 2) + 1;
+	int u_y, u_x;
+	do
+	{
+		u_y = rand() % (height - 2) + 1;
+		u_x = rand() % (width - 2) + 1;
+	} while (u_y == y && u_x == x);
+
+	int cy = y, cx = x;//"Прокладываем дорогу"
+	while (cx != u_x)
+	{
+		map[cy][cx] = '.';
+		cx += (u_x > cx) ? 1 : -1;
+	}
+	while (cy != u_y)
+	{
+		map[cy][cx] = '.';
+		cy += (u_y > cy) ? 1 : -1;
+	}
+
+	map[y][x] = 'D'; //Лестница вниз прямо под героем
+	map[u_y][u_x] = 'U'; //Лестница вверх
+	*out_y = y;
+	*out_x = x;
+}
+
 void clear_buffer(void)//Функция очищения буфера, нужна будет для 10 пункта
 {
 	int c;
