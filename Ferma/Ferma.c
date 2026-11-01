@@ -419,6 +419,68 @@ void clear_buffer(void)//Функция очищения буфера, нужн�
 }
 
 
+void start_adventure(void)
+{
+	char** map = NULL;
+	int height = 0, width = 0;
+	int player_y = 0, player_x = 0;
+	int level = 1;
+
+	generate_map(&map, &height, &width, &player_y, &player_x);
+
+	while (1)
+	{
+		print_map(map, height, width, player_y, player_x);
+		printf("=== Этаж: %d ===\n", level);
+		printf("\nУправление: W-вверх, A-влево, S-вниз, D-вправо, Q-вернуться домой (только на лестнице D)\n");
+
+		printf("Ваш ход: ");
+		char choice;
+		if (scanf(" %c", &choice) != 1) //Ввод закрыт — выходим, чтобы не зациклиться
+		{
+			free_map(map, height);
+			break;
+		}
+		clear_buffer(); //Убираем Enter и всё, что напечатали после первой буквы
+
+		if (choice == 'q' || choice == 'Q')
+		{
+			if (map[player_y][player_x] == 'D') //Выход из башни
+			{
+				free_map(map, height);
+				break;
+			}
+			printf("\nВыход домой возможен только на лестнице вниз (D)!\n");
+			system("pause");
+			continue;
+		}
+
+		int next_y = player_y;
+		int next_x = player_x;
+		if (choice == 'w' || choice == 'W') next_y--;
+		else if (choice == 's' || choice == 'S') next_y++;
+		else if (choice == 'a' || choice == 'A') next_x--;
+		else if (choice == 'd' || choice == 'D') next_x++;
+
+		char target = map[next_y][next_x]; //Ограничение по препятствиям
+		if (target == '#' || target == 'T' || target == 'R')
+		{
+			printf("\nТам препятствие! Путь заблокирован\n");
+			system("pause");
+		}
+		else if (target == 'U') //Лестница наверх
+		{
+			free_map(map, height);
+			level++;
+			generate_map(&map, &height, &width, &player_y, &player_x);
+		}
+		else
+		{
+			player_y = next_y;
+			player_x = next_x;
+		}
+	}
+}
 int main()
 {
 	SetConsoleCP(65001); //Эта, а также следующая строчка были созданы для грамматной работы консоли(у меня работает только так)
@@ -494,6 +556,7 @@ int main()
 		}
 		case 10:
 		{
+			start_adventure();
 			break;
 		}
 		case 0:
