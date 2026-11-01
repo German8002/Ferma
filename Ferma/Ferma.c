@@ -3,6 +3,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <stdlib.h>
+#include <time.h>
 #define MAX_FARMER_NAME 32
 #define MAX_ITEMS 10
 #define MAX_NAME_LEN 32
@@ -296,7 +297,7 @@ void map_unpacker(void)
 		}
 	}
 
-	if (!error && len > 0) {// Проверка последней строки, если она без '\n'
+	if (!error && len > 0) {//Проверка последней строки, если она без '\n'
 		if (expected < 0) expected = len;
 		else if (len != expected) error = 1;
 		else {
@@ -324,10 +325,18 @@ void map_unpacker(void)
 	free(map);
 }
 
+void clear_buffer(void)//Функция очищения буфера, нужна будет для 10 пункта
+{
+	int c;
+	while ((c = getchar()) != '\n' && c != EOF);
+}
+
+
 int main()
 {
 	SetConsoleCP(65001); //Эта, а также следующая строчка были созданы для грамматной работы консоли(у меня работает только так)
 	SetConsoleOutputCP(65001);
+	srand((unsigned)time(NULL)); //Нужен для будующей генерации карты(сид зависит от времени)
 	read_file();
 	naming();
 	int userAction = -1;
@@ -344,6 +353,7 @@ int main()
 		printf("[7] Поиск предмета в рюкзаке по названию \n");
 		printf("[8] Записать состояние в дневник фермера (diary.txt) \n");
 		printf("[9] Распаковщик карты \n");
+		printf("[10] Отправиться в приключение \n");
 		if (!fool_check(scanf("%d", &userAction))) //Запрашиваем пункт меню с проверкой на дурака
 		{
 			continue;
@@ -393,6 +403,10 @@ int main()
 		case 9:
 		{
 			map_unpacker();
+			break;
+		}
+		case 10:
+		{
 			break;
 		}
 		case 0:
