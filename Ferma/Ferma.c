@@ -325,6 +325,61 @@ void map_unpacker(void)
 	free(map);
 }
 
+void carve_path(char** map, int y1, int x1, int y2, int x2)//Отдельная вспомогательная функция для прокладывания дороги
+{
+	int cy = y1, cx = x1;
+	while (cx != x2)
+	{
+		map[cy][cx] = '.';
+		cx += (x2 > cx) ? 1 : -1;
+	}
+	while (cy != y2)
+	{
+		map[cy][cx] = '.';
+		cy += (y2 > cy) ? 1 : -1;
+	}
+	map[cy][cx] = '.'; //последняя клетка тоже
+}
+
+void open_wall(char** map, int height, int width, int vertical)//Функция открытия стены
+{
+	if (vertical)
+	{
+		int mid = width / 2;
+		for (int i = 1; i < height - 1; i++) map[i][mid] = '.';
+	}
+	else
+	{
+		int mid = height / 2;
+		for (int j = 1; j < width - 1; j++) map[mid][j] = '.';
+	}
+}
+
+void mirror_map(char** map, int height, int width, int vertical)
+{
+	if (vertical) //Стена вертикальная
+	{
+		int mid = width / 2;
+		for (int i = 1; i < height - 1; i++)
+		{
+			for (int j = mid + 1; j < width - 1; j++)
+			{
+				map[i][j] = map[i][width - 1 - j]; //Зергалим по горизонатели
+			}
+		}
+	}
+	else //Стена горизонтальная
+	{
+		int mid = height / 2;
+		for (int i = mid + 1; i < height - 1; i++)
+		{
+			for (int j = 1; j < width - 1; j++)
+			{
+				map[i][j] = map[height - 1 - i][j]; //Зеркалим по вертикали
+			}
+		}
+	}
+}
 void print_map(char** map, int height, int width, int player_y, int player_x) //Значения переменных(и указателей) даются в основной функции
 {
 	system("cls"); //Очищаем экран перед каждым показом
@@ -353,12 +408,17 @@ void free_map(char** map, int height)
 	free(map); //Освобождаем список адресов строк
 }
 
-void generate_map(char*** map_ptr, int* out_height, int* out_width, int* out_y, int* out_x) // Создаёт этаж целиком
+void generate_map(char*** map_ptr, int* out_height, int* out_width, int* out_y, int* out_x, int* out_vertical) // Создаёт этаж целиком
 {
+	int vertical = rand() % 2; //1 - стена вертикальная, 0 - горизонтальная
 	int height = rand() % 26 + 5; //от 5 до 30(Высота)
 	int width = rand() % 26 + 5; //Длина
+	if (vertical) width = (rand() % 12) * 2 + 7; //Делаем длину нечётной для нормального отзеркаливания
+	else height = (rand() % 12) * 2 + 7; //Делаем высоту нечётной для нормального отзеркаливания
+	int mid = vertical ? width / 2 : height / 2; //Номер строчки или столба, по которому идёт сама стена(для зеркала)
 	*out_height = height;
 	*out_width = width;
+	*out_vertical = vertical;
 
 	char** map = (char**)malloc(height * sizeof(char*)); //Память под список строк
 	for (int i = 0; i < height; i++)
@@ -371,7 +431,8 @@ void generate_map(char*** map_ptr, int* out_height, int* out_width, int* out_y, 
 	{
 		for (int j = 0; j < width; j++)
 		{
-			if (i == 0 || i == height - 1 || j == 0 || j == width - 1)//Выставляем стены
+			int on_middle = vertical ? (j == mid) : (i == mid );
+			if (i == 0 || i == height - 1 || j == 0 || j == width - 1 || on_middle)//Выставляем стены
 			{
 				map[i][j] = '#';
 			}
@@ -385,29 +446,33 @@ void generate_map(char*** map_ptr, int* out_height, int* out_width, int* out_y, 
 		}
 	}
 
-	int y = rand() % (height - 2) + 1;//Выставляем "D" и "U"
-	int x = rand() % (width - 2) + 1;
-	int u_y, u_x;
+	int max_y = vertical ? height - 2 : mid - 1;
+	int max_x = vertical ? mid - 1 : width - 2;
+
+	int y = rand() % max_y + 1;
+	int x = rand() % max_x + 1;
+	int u_y, u_x, s_y, s_x;
 	do
 	{
-		u_y = rand() % (height - 2) + 1;
-		u_x = rand() % (width - 2) + 1;
+		u_y = rand() % max_y + 1;
+		u_x = rand() % max_x + 1;
 	} while (u_y == y && u_x == x);
-
-	int cy = y, cx = x;//"Прокладываем дорогу"
-	while (cx != u_x)
+	do
 	{
-		map[cy][cx] = '.';
-		cx += (u_x > cx) ? 1 : -1;
-	}
-	while (cy != u_y)
-	{
-		map[cy][cx] = '.';
-		cy += (u_y > cy) ? 1 : -1;
-	}
+		s_y = rand() % max_y + 1;
+		s_x = rand() % max_x + 1;
+	} while ((s_y == y && s_x == x) || (s_y == u_y && s_x == u_x));
 
-	map[y][x] = 'D'; //Лестница вниз прямо под героем
-	map[u_y][u_x] = 'U'; //Лестница вверх
+	carve_path(map, y, x, u_y, u_x);//Прокладываем дорогу для U
+	carve_path(map, y, x, s_y, s_x);//Прокладываем дорогу для S
+
+	map[u_y][u_x] = 'U'; //Выставляем U до отзеркаливания
+
+	mirror_map(map, height, width, vertical); //Зеркалим
+
+	map[y][x] = 'D'; //Лестница вниз под героем
+	map[s_y][s_x] = 'S'; //Переключатель
+
 	*out_y = y;
 	*out_x = x;
 }
@@ -424,9 +489,10 @@ void start_adventure(void)
 	char** map = NULL;
 	int height = 0, width = 0;
 	int player_y = 0, player_x = 0;
+	int vertical = 0;
 	int level = 1;
 
-	generate_map(&map, &height, &width, &player_y, &player_x);
+	generate_map(&map, &height, &width, &player_y, &player_x, &vertical);
 
 	while (1)
 	{
@@ -472,15 +538,22 @@ void start_adventure(void)
 		{
 			free_map(map, height);
 			level++;
-			generate_map(&map, &height, &width, &player_y, &player_x);
+			generate_map(&map, &height, &width, &player_y, &player_x, &vertical);
 		}
 		else
 		{
 			player_y = next_y;
 			player_x = next_x;
+			if (map[player_y][player_x] == 'S') //Наступили на переключатель
+			{
+				open_wall(map, height, width, vertical);
+				map[player_y][player_x] = '.'; //Переключатель сработал
+				system("pause");
+			}
 		}
 	}
 }
+
 int main()
 {
 	SetConsoleCP(65001); //Эта, а также следующая строчка были созданы для грамматной работы консоли(у меня работает только так)
