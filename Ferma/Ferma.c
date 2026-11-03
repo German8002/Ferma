@@ -4,6 +4,7 @@
 #include <ctype.h>
 #include <stdlib.h>
 #include <time.h>
+#include <windows.h>
 #define MAX_FARMER_NAME 32
 #define MAX_ITEMS 10
 #define MAX_NAME_LEN 32
@@ -211,12 +212,12 @@ void item_place(void)
 	printf("Выберите слот, в который хотите положить предмет.\n");
 	if (!fool_check(scanf("%d", &slot_id)))//Запрашиваем слот, в который нужно положить предмет.Делаем это с провркой на дурака
 	{
-		return 0;
+		return;
 	}
 	printf("Выберите ID предмета, которы хотите положить в этот слот.\n");
 	if (!fool_check(scanf("%d", &item_id)))//Запрашиваем ID предмета, который нужно положить в указанный слот.Тоже проверка на дурака
 	{
-		return 0;
+		return;
 	}
 	if (item_id >= 0 && item_id < 10 && slot_id >= 0 && slot_id < 10)//Проверяем, не ошибся ли пользователь в ID или номере слота
 		inventory[slot_id] = item_id;//Присваиваем элементу значение, указанное пользователем
@@ -341,20 +342,6 @@ void carve_path(char** map, int y1, int x1, int y2, int x2)//Отдельная 
 	map[cy][cx] = '.'; //последняя клетка тоже
 }
 
-void open_wall(char** map, int height, int width, int vertical)//Функция открытия стены
-{
-	if (vertical)
-	{
-		int mid = width / 2;
-		for (int i = 1; i < height - 1; i++) map[i][mid] = '.';
-	}
-	else
-	{
-		int mid = height / 2;
-		for (int j = 1; j < width - 1; j++) map[mid][j] = '.';
-	}
-}
-
 void mirror_map(char** map, int height, int width, int vertical)
 {
 	if (vertical) //Стена вертикальная
@@ -380,6 +367,7 @@ void mirror_map(char** map, int height, int width, int vertical)
 		}
 	}
 }
+
 void print_map(char** map, int height, int width, int player_y, int player_x) //Значения переменных(и указателей) даются в основной функции
 {
 	system("cls"); //Очищаем экран перед каждым показом
@@ -408,7 +396,7 @@ void free_map(char** map, int height)
 	free(map); //Освобождаем список адресов строк
 }
 
-void generate_map(char*** map_ptr, int* out_height, int* out_width, int* out_y, int* out_x, int* out_vertical) // Создаёт этаж целиком
+void generate_map(char*** map_ptr, int* out_height, int* out_width, int* out_y, int* out_x, int* out_vertical, int* out_sy, int* out_sx)
 {
 	int vertical = rand() % 2; //1 - стена вертикальная, 0 - горизонтальная
 	int height = rand() % 26 + 5; //от 5 до 30(Высота)
@@ -466,15 +454,49 @@ void generate_map(char*** map_ptr, int* out_height, int* out_width, int* out_y, 
 	carve_path(map, y, x, u_y, u_x);//Прокладываем дорогу для U
 	carve_path(map, y, x, s_y, s_x);//Прокладываем дорогу для S
 
-	map[u_y][u_x] = 'U'; //Выставляем U до отзеркаливания
-
 	mirror_map(map, height, width, vertical); //Зеркалим
 
 	map[y][x] = 'D'; //Лестница вниз под героем
 	map[s_y][s_x] = 'S'; //Переключатель
 
+	int u_side = rand() % 2;// Ставим ровно одну U: либо в левой/верхней, либо в правой/нижней половине
+	int placed = 0;
+	int guard = 0;
+	while (!placed && guard < 10000)
+	{
+		int ry, rx;
+		if (vertical)
+		{
+			if (u_side == 0) { ry = rand() % (height - 2) + 1; rx = rand() % (mid - 1) + 1; }
+			else { ry = rand() % (height - 2) + 1; rx = rand() % (width - mid - 2) + mid + 1; }
+		}
+		else
+		{
+			if (u_side == 0) { ry = rand() % (mid - 1) + 1; rx = rand() % (width - 2) + 1; }
+			else { ry = rand() % (height - mid - 2) + mid + 1; rx = rand() % (width - 2) + 1; }
+		}
+		if (map[ry][rx] == '.' && !(ry == y && rx == x) && !(ry == s_y && rx == s_x))
+		{
+			map[ry][rx] = 'U';
+			placed = 1;
+		}
+		guard++;
+	}
+	if (!placed)//Подстраховка: если не нашли место — берём любую свободную клетку
+	{
+		for (int i = 1; i < height - 1 && !placed; i++)
+			for (int j = 1; j < width - 1 && !placed; j++)
+				if (map[i][j] == '.' && !(i == y && j == x) && !(i == s_y && j == s_x))
+				{
+					map[i][j] = 'U';
+					placed = 1;
+				}
+	}
+
 	*out_y = y;
 	*out_x = x;
+	*out_sy = s_y;
+	*out_sx = s_x;
 }
 
 void clear_buffer(void)//Функция очищения буфера, нужна будет для 10 пункта
@@ -483,6 +505,122 @@ void clear_buffer(void)//Функция очищения буфера, нужн�
 	while ((c = getchar()) != '\n' && c != EOF);
 }
 
+void rebuild_right_half(char** map, int height, int width, int vertical,
+	int player_y, int player_x)
+{
+	int mid = vertical ? width / 2 : height / 2;
+
+	int old_u_inside = 0;//Запоминаем, была ли U в перестраиваемой половине
+	if (vertical)
+	{
+		for (int i = 1; i < height - 1; i++)
+			for (int j = mid + 1; j < width - 1; j++)
+				if (map[i][j] == 'U') old_u_inside = 1;
+	}
+	else
+	{
+		for (int i = mid + 1; i < height - 1; i++)
+			for (int j = 1; j < width - 1; j++)
+				if (map[i][j] == 'U') old_u_inside = 1;
+	}
+
+	if (vertical)// 1. Убираем разделяющую стену — делаем её проходимой
+		for (int i = 1; i < height - 1; i++) map[i][mid] = '.';
+	else
+		for (int j = 1; j < width - 1; j++) map[mid][j] = '.';
+
+
+	if (vertical) //Перестраиваем половину
+	{
+		for (int i = 1; i < height - 1; i++)
+			for (int j = mid + 1; j < width - 1; j++)
+			{
+				int chance = rand() % 100;
+				if (chance < 15) map[i][j] = 'T';
+				else if (chance < 25) map[i][j] = 'R';
+				else map[i][j] = '.';
+			}
+	}
+	else
+	{
+		for (int i = mid + 1; i < height - 1; i++)
+			for (int j = 1; j < width - 1; j++)
+			{
+				int chance = rand() % 100;
+				if (chance < 15) map[i][j] = 'T';
+				else if (chance < 25) map[i][j] = 'R';
+				else map[i][j] = '.';
+			}
+	}
+
+	int u_y = -1, u_x = -1;	// 3. Если U была в перестроенной половине — возвращаем ровно одну
+	if (old_u_inside)
+	{
+		int placed = 0, guard = 0;
+		while (!placed && guard < 10000)
+		{
+			int ry, rx;
+			if (vertical)
+			{
+				ry = rand() % (height - 2) + 1;
+				rx = rand() % (width - mid - 2) + mid + 1;
+			}
+			else
+			{
+				ry = rand() % (height - mid - 2) + mid + 1;
+				rx = rand() % (width - 2) + 1;
+			}
+			if (map[ry][rx] == '.')
+			{
+				map[ry][rx] = 'U';
+				u_y = ry; u_x = rx;
+				placed = 1;
+			}
+			guard++;
+		}
+		if (!placed)
+		{
+			for (int i = 1; i < height - 1 && !placed; i++)
+				for (int j = 1; j < width - 1 && !placed; j++)
+					if (map[i][j] == '.')
+					{
+						map[i][j] = 'U';
+						u_y = i; u_x = j;
+						placed = 1;
+					}
+		}
+	}
+	else //4.U осталась в старой половине — найдём её координаты
+	{
+		for (int i = 1; i < height - 1; i++)
+			for (int j = 1; j < width - 1; j++)
+				if (map[i][j] == 'U') { u_y = i; u_x = j; }
+	}
+
+	if (u_y >= 0)//Прокладываем дорогу до U от точки входа в новую половину
+	{
+		int entry_y, entry_x;
+		if (vertical)
+		{
+			entry_x = mid;
+			entry_y = player_y;
+			if (entry_y <= 0 || entry_y >= height - 1) entry_y = height / 2;
+		}
+		else
+		{
+			entry_y = mid;
+			entry_x = player_x;
+			if (entry_x <= 0 || entry_x >= width - 1) entry_x = width / 2;
+		}
+
+		int u_in_new_half = vertical ? (u_x > mid) : (u_y > mid);
+		if (u_in_new_half)
+		{
+			carve_path(map, entry_y, entry_x, u_y, u_x);
+			map[u_y][u_x] = 'U'; //Если U нет, то возвращаем её
+		}
+	}
+}
 
 void start_adventure(void)
 {
@@ -491,8 +629,9 @@ void start_adventure(void)
 	int player_y = 0, player_x = 0;
 	int vertical = 0;
 	int level = 1;
+	int s_y = 0, s_x = 0;
 
-	generate_map(&map, &height, &width, &player_y, &player_x, &vertical);
+	generate_map(&map, &height, &width, &player_y, &player_x, &vertical, &s_y, &s_x);
 
 	while (1)
 	{
@@ -538,7 +677,7 @@ void start_adventure(void)
 		{
 			free_map(map, height);
 			level++;
-			generate_map(&map, &height, &width, &player_y, &player_x, &vertical);
+			generate_map(&map, &height, &width, &player_y, &player_x, &vertical, &s_y, &s_x);
 		}
 		else
 		{
@@ -546,8 +685,8 @@ void start_adventure(void)
 			player_x = next_x;
 			if (map[player_y][player_x] == 'S') //Наступили на переключатель
 			{
-				open_wall(map, height, width, vertical);
-				map[player_y][player_x] = '.'; //Переключатель сработал
+				rebuild_right_half(map, height, width, vertical, player_y, player_x);
+				map[player_y][player_x] = '.'; //Переключатель сработал (одноразовый)
 				system("pause");
 			}
 		}
