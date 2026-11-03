@@ -449,30 +449,27 @@ void generate_map(char*** map_ptr, int* out_height, int* out_width, int* out_y, 
 	{
 		s_y = rand() % max_y + 1;
 		s_x = rand() % max_x + 1;
-	} while ((s_y == y && s_x == x) || (s_y == u_y && s_x == u_x));
+	} while ((s_y == y && s_x == x) || (s_y == u_y && s_x == s_x));
 
 	carve_path(map, y, x, u_y, u_x);//Прокладываем дорогу для U
 	carve_path(map, y, x, s_y, s_x);//Прокладываем дорогу для S
 
-	mirror_map(map, height, width, vertical); //Зеркалим
+	map[y][x] = 'D'; //Лестница вниз под героем — до зеркала
+	map[s_y][s_x] = 'S'; //Переключатель — до зеркала
 
-	map[y][x] = 'D'; //Лестница вниз под героем
-	map[s_y][s_x] = 'S'; //Переключатель
-
-	int u_side = rand() % 2;// Ставим ровно одну U: либо в левой/верхней, либо в правой/нижней половине
-	int placed = 0;
+	int placed = 0;//U — в случайную половину, до зеркала (если слева — отзеркалится вправо)
 	int guard = 0;
 	while (!placed && guard < 10000)
 	{
 		int ry, rx;
 		if (vertical)
 		{
-			if (u_side == 0) { ry = rand() % (height - 2) + 1; rx = rand() % (mid - 1) + 1; }
+			if (rand() % 2 == 0) { ry = rand() % (height - 2) + 1; rx = rand() % (mid - 1) + 1; }
 			else { ry = rand() % (height - 2) + 1; rx = rand() % (width - mid - 2) + mid + 1; }
 		}
 		else
 		{
-			if (u_side == 0) { ry = rand() % (mid - 1) + 1; rx = rand() % (width - 2) + 1; }
+			if (rand() % 2 == 0) { ry = rand() % (mid - 1) + 1; rx = rand() % (width - 2) + 1; }
 			else { ry = rand() % (height - mid - 2) + mid + 1; rx = rand() % (width - 2) + 1; }
 		}
 		if (map[ry][rx] == '.' && !(ry == y && rx == x) && !(ry == s_y && rx == s_x))
@@ -493,6 +490,8 @@ void generate_map(char*** map_ptr, int* out_height, int* out_width, int* out_y, 
 				}
 	}
 
+	mirror_map(map, height, width, vertical); //Зеркалим — если U была слева, она появится и справа
+
 	*out_y = y;
 	*out_x = x;
 	*out_sy = s_y;
@@ -510,25 +509,24 @@ void rebuild_right_half(char** map, int height, int width, int vertical,
 {
 	int mid = vertical ? width / 2 : height / 2;
 
-	int old_u_inside = 0;//Запоминаем, была ли U в перестраиваемой половине
+	int u_y = -1, u_x = -1;//Запоминаем, была ли U в перестраиваемой половине и где именно
 	if (vertical)
 	{
 		for (int i = 1; i < height - 1; i++)
 			for (int j = mid + 1; j < width - 1; j++)
-				if (map[i][j] == 'U') old_u_inside = 1;
+				if (map[i][j] == 'U') { u_y = i; u_x = j; }
 	}
 	else
 	{
 		for (int i = mid + 1; i < height - 1; i++)
 			for (int j = 1; j < width - 1; j++)
-				if (map[i][j] == 'U') old_u_inside = 1;
+				if (map[i][j] == 'U') { u_y = i; u_x = j; }
 	}
 
 	if (vertical)// 1. Убираем разделяющую стену — делаем её проходимой
 		for (int i = 1; i < height - 1; i++) map[i][mid] = '.';
 	else
 		for (int j = 1; j < width - 1; j++) map[mid][j] = '.';
-
 
 	if (vertical) //Перестраиваем половину
 	{
@@ -553,8 +551,11 @@ void rebuild_right_half(char** map, int height, int width, int vertical,
 			}
 	}
 
-	int u_y = -1, u_x = -1;	// 3. Если U была в перестроенной половине — возвращаем ровно одну
-	if (old_u_inside)
+	if (u_y >= 0)// 3. Если U уже была справа — возвращаем её на место, новую не ставим
+	{
+		map[u_y][u_x] = 'U';
+	}
+	else// U справа не было — создаём новую
 	{
 		int placed = 0, guard = 0;
 		while (!placed && guard < 10000)
@@ -590,34 +591,20 @@ void rebuild_right_half(char** map, int height, int width, int vertical,
 					}
 		}
 	}
-	else //4.U осталась в старой половине — найдём её координаты
+
+	if (u_y >= 0)//Прокладываем дорогу до U и до D от игрока, чтобы не запереть
 	{
+		carve_path(map, player_y, player_x, u_y, u_x);
+		map[u_y][u_x] = 'U'; //Если U нет, то возвращаем её
+
+		int d_y = -1, d_x = -1;//Ищем D, чтобы прорубить дорогу и до него
 		for (int i = 1; i < height - 1; i++)
 			for (int j = 1; j < width - 1; j++)
-				if (map[i][j] == 'U') { u_y = i; u_x = j; }
-	}
-
-	if (u_y >= 0)//Прокладываем дорогу до U от точки входа в новую половину
-	{
-		int entry_y, entry_x;
-		if (vertical)
+				if (map[i][j] == 'D') { d_y = i; d_x = j; }
+		if (d_y >= 0)
 		{
-			entry_x = mid;
-			entry_y = player_y;
-			if (entry_y <= 0 || entry_y >= height - 1) entry_y = height / 2;
-		}
-		else
-		{
-			entry_y = mid;
-			entry_x = player_x;
-			if (entry_x <= 0 || entry_x >= width - 1) entry_x = width / 2;
-		}
-
-		int u_in_new_half = vertical ? (u_x > mid) : (u_y > mid);
-		if (u_in_new_half)
-		{
-			carve_path(map, entry_y, entry_x, u_y, u_x);
-			map[u_y][u_x] = 'U'; //Если U нет, то возвращаем её
+			carve_path(map, player_y, player_x, d_y, d_x);
+			map[d_y][d_x] = 'D';
 		}
 	}
 }
