@@ -523,7 +523,7 @@ void rebuild_right_half(char** map, int height, int width, int vertical,
 				if (map[i][j] == 'U') { u_y = i; u_x = j; }
 	}
 
-	if (vertical)// 1. Убираем разделяющую стену — делаем её проходимой
+	if (vertical)// Убираем разделяющую стену — делаем её проходимой
 		for (int i = 1; i < height - 1; i++) map[i][mid] = '.';
 	else
 		for (int j = 1; j < width - 1; j++) map[mid][j] = '.';
@@ -551,7 +551,7 @@ void rebuild_right_half(char** map, int height, int width, int vertical,
 			}
 	}
 
-	if (u_y >= 0)// 3. Если U уже была справа — возвращаем её на место, новую не ставим
+	if (u_y >= 0)// Если U уже была справа — возвращаем её на место, новую не ставим
 	{
 		map[u_y][u_x] = 'U';
 	}
