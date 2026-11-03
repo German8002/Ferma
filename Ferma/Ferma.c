@@ -89,9 +89,9 @@ void read_file(void)
 	{
 		int id;
 		char name[MAX_NAME_LEN];
-		while (fscanf(f, "%d %31s", &id, name) == 2) 
+		while (fscanf(f, "%d %31s", &id, name) == 2)
 		{
-			if (id >= 0 && id < MAX_ITEMS) 
+			if (id >= 0 && id < MAX_ITEMS)
 			{
 				strcpy(item_names[id], name);
 			}
@@ -169,11 +169,11 @@ void diary_writer(void)
 		int id = inventory[i];
 		if (id >= 0 && id < MAX_ITEMS)
 		{
-			fprintf(f,"Слот %d: [%d] - %s\n", i, id, item_names[id]);
+			fprintf(f, "Слот %d: [%d] - %s\n", i, id, item_names[id]);
 		}
 		else
 		{
-			fprintf(f,"Слот %d: [%d] - Неизвестный предмет\n", i, id);
+			fprintf(f, "Слот %d: [%d] - Неизвестный предмет\n", i, id);
 		}
 	}
 	fclose(f);
@@ -230,7 +230,7 @@ void item_drop(void)
 	printf("Введите слот, предмет из которого нужно выбросить(от 0 до 9).\n");
 	if (!fool_check(scanf("%d", &drop_choice)))//Запрашиваем слот, из которого нужно выбросить предметы
 	{
-		return ;
+		return;
 	}
 	if (drop_choice >= 0 && drop_choice < 10)//Проверяем, указал ли пользователь допустимый слот
 	{
@@ -431,7 +431,7 @@ void generate_map(char*** map_ptr, int* out_height, int* out_width, int* out_y, 
 	{
 		for (int j = 0; j < width; j++)
 		{
-			int on_middle = vertical ? (j == mid) : (i == mid );
+			int on_middle = vertical ? (j == mid) : (i == mid);
 			if (i == 0 || i == height - 1 || j == 0 || j == width - 1 || on_middle)//Выставляем стены
 			{
 				map[i][j] = '#';

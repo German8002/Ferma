@@ -1,0 +1,13 @@
+*
+
+!*/
+
+!*.c
+!*.h
+!items.txt
+!input.txt
+
+!README*
+!*.md
+
+!.gitignore
