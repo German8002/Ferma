@@ -372,6 +372,11 @@ void print_map(char** map, int height, int width, int player_y, int player_x, in
 {
 	system("cls");
 
+	HANDLE h = GetStdHandle(STD_OUTPUT_HANDLE);
+	const WORD COLOR_NORMAL = FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE; // обычный серый (7)
+	const WORD COLOR_DIM = FOREGROUND_INTENSITY;                                   // тёмно-серый (8)
+
+	int mid = vertical ? width / 2 : height / 2;
 	int mirror_y = vertical ? player_y : height - 1 - player_y;
 	int mirror_x = vertical ? width - 1 - player_x : player_x;
 
@@ -379,6 +384,10 @@ void print_map(char** map, int height, int width, int player_y, int player_x, in
 	{
 		for (int j = 0; j < width; j++)
 		{
+			int in_mirror_half = show_mirror && (vertical ? j > mid : i > mid);// Клетка за стеной (отзеркаленная половина), пока двойник активен
+
+			SetConsoleTextAttribute(h, in_mirror_half ? COLOR_DIM : COLOR_NORMAL);
+
 			if ((i == player_y && j == player_x) ||
 				(show_mirror && i == mirror_y && j == mirror_x))
 			{
@@ -388,8 +397,10 @@ void print_map(char** map, int height, int width, int player_y, int player_x, in
 				printf("%c", map[i][j]);
 			}
 		}
+		SetConsoleTextAttribute(h, COLOR_NORMAL);
 		printf("\n");
 	}
+	SetConsoleTextAttribute(h, COLOR_NORMAL); // возвращаем обычный цвет для остального текста
 }
 
 void free_map(char** map, int height)
