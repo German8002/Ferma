@@ -6,6 +6,7 @@
 #include <time.h>
 #include <windows.h>
 #include "map.h"
+#include "utils.h"
 #define MAX_FARMER_NAME 32
 #define MAX_ITEMS 10
 #define MAX_NAME_LEN 32

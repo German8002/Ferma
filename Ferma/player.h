@@ -16,7 +16,15 @@ typedef enum
     SCOUT
 } Profession;
 
-
+typedef struct
+{
+    int bonus_hp;
+    int bonus_stamina;
+    int farmer_bonus;
+    int lumberjack_bonus;
+    int miner_bonus;
+    int scout_bonus;
+} Profession_desc;
 
 typedef struct 
 {
@@ -28,6 +36,5 @@ typedef struct
     int gold;
     int x, y; // Координаты на карте приключения
     int inventory[MAX_ITEMS];
-    Profession cls;
-
+    Profession_desc cls;
 } Player;
