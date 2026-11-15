@@ -22,8 +22,12 @@ void carve_path(char** map, int y1, int x1, int y2, int x2)//Отдельная 
 	map[cy][cx] = '.'; //последняя клетка тоже
 }
 
-void mirror_map(char** map, int height, int width, int vertical)
+void mirror_map(Map* m, int vertical)
 {
+	char** map = m->cells;
+	int height = m->height;
+	int width = m->width;
+
 	if (vertical) //Стена вертикальная
 	{
 		int mid = width / 2;
@@ -31,7 +35,7 @@ void mirror_map(char** map, int height, int width, int vertical)
 		{
 			for (int j = mid + 1; j < width - 1; j++)
 			{
-				map[i][j] = map[i][width - 1 - j]; //Зергалим по горизонатели
+				map[i][j] = map[i][width - 1 - j]; //Зеркалим по горизонтали
 			}
 		}
 	}
@@ -48,13 +52,16 @@ void mirror_map(char** map, int height, int width, int vertical)
 	}
 }
 
-void print_map(char** map, int height, int width, int player_y, int player_x, int vertical, int show_mirror)
+void print_map(const Map* m, int player_y, int player_x, int vertical, int show_mirror)
 {
 	system("cls");
 
 	HANDLE h = GetStdHandle(STD_OUTPUT_HANDLE);
 	const WORD COLOR_NORMAL = FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE; // обычный серый (7)
 	const WORD COLOR_DIM = FOREGROUND_INTENSITY;                                   // тёмно-серый (8)
+
+	int height = m->height;
+	int width = m->width;
 
 	int mid = vertical ? width / 2 : height / 2;
 	int mirror_y = vertical ? player_y : height - 1 - player_y;
@@ -74,7 +81,7 @@ void print_map(char** map, int height, int width, int player_y, int player_x, in
 				printf("@");
 			}
 			else {
-				printf("%c", map[i][j]);
+				printf("%c", m->cells[i][j]);
 			}
 		}
 		SetConsoleTextAttribute(h, COLOR_NORMAL);
@@ -83,16 +90,22 @@ void print_map(char** map, int height, int width, int player_y, int player_x, in
 	SetConsoleTextAttribute(h, COLOR_NORMAL); // возвращаем обычный цвет для остального текста
 }
 
-void free_map(char** map, int height)
+void free_map(Map* m)
 {
-	for (int i = 0; i < height; i++)
+	if (m->cells == NULL) return; //Уже освобождено - защита от двойного free
+
+	for (int i = 0; i < m->height; i++)
 	{
-		free(map[i]); //Освобождаем каждую строку
+		free(m->cells[i]); //Освобождаем каждую строку
 	}
-	free(map); //Освобождаем список адресов строк
+	free(m->cells); //Освобождаем список адресов строк
+	m->cells = NULL;
+	m->width = 0;
+	m->height = 0;
 }
 
-void generate_map(char*** map_ptr, int* out_height, int* out_width, int* out_y, int* out_x, int* out_vertical, int* out_sy, int* out_sx)
+// Создаёт новую локацию внутри m. Счётчик m->level не меняется - им управляет вызывающий код.
+void generate_map(Map* m, int* out_y, int* out_x, int* out_vertical, int* out_sy, int* out_sx)
 {
 	int vertical = rand() % 2; //1 - стена вертикальная, 0 - горизонтальная
 	int height = rand() % 26 + 5; //от 5 до 30(Высота)
@@ -100,8 +113,8 @@ void generate_map(char*** map_ptr, int* out_height, int* out_width, int* out_y, 
 	if (vertical) width = (rand() % 12) * 2 + 7; //Делаем длину нечётной для нормального отзеркаливания
 	else height = (rand() % 12) * 2 + 7; //Делаем высоту нечётной для нормального отзеркаливания
 	int mid = vertical ? width / 2 : height / 2; //Номер строчки или столба, по которому идёт сама стена(для зеркала)
-	*out_height = height;
-	*out_width = width;
+	m->height = height;
+	m->width = width;
 	*out_vertical = vertical;
 
 	char** map = (char**)malloc(height * sizeof(char*)); //Память под список строк
@@ -109,7 +122,7 @@ void generate_map(char*** map_ptr, int* out_height, int* out_width, int* out_y, 
 	{
 		map[i] = (char*)malloc(width * sizeof(char)); //Память под каждую строку
 	}
-	*map_ptr = map;
+	m->cells = map;
 
 	for (int i = 0; i < height; i++)// Наполнение карты
 	{
@@ -186,7 +199,7 @@ void generate_map(char*** map_ptr, int* out_height, int* out_width, int* out_y, 
 				}
 	}
 
-	mirror_map(map, height, width, vertical); //Зеркалим — если U была слева, она появится и справа
+	mirror_map(m, vertical); //Зеркалим — если U была слева, она появится и справа
 
 	*out_y = y;
 	*out_x = x;
@@ -194,15 +207,11 @@ void generate_map(char*** map_ptr, int* out_height, int* out_width, int* out_y, 
 	*out_sx = s_x;
 }
 
-void clear_buffer(void)//Функция очищения буфера, нужна будет для 10 пункта
+void rebuild_right_half(Map* m, int vertical, int player_y, int player_x)
 {
-	int c;
-	while ((c = getchar()) != '\n' && c != EOF);
-}
-
-void rebuild_right_half(char** map, int height, int width, int vertical,
-	int player_y, int player_x)
-{
+	char** map = m->cells;
+	int height = m->height;
+	int width = m->width;
 	int mid = vertical ? width / 2 : height / 2;
 
 	int u_y = -1, u_x = -1;//Запоминаем, была ли U в перестраиваемой половине и где именно
@@ -307,36 +316,34 @@ void rebuild_right_half(char** map, int height, int width, int vertical,
 
 void start_adventure(void)
 {
-	char** map = NULL;
-	int height = 0, width = 0;
+	Map map = { NULL, 0, 0, 1 }; //cells, width, height, level (начинаем с 1-го этажа)
 	int player_y = 0, player_x = 0;
 	int vertical = 0;
-	int level = 1;
 	int s_y = 0, s_x = 0;
 	int mirror_active = 1;
 
-	generate_map(&map, &height, &width, &player_y, &player_x, &vertical, &s_y, &s_x);
+	generate_map(&map, &player_y, &player_x, &vertical, &s_y, &s_x);
 
 	while (1)
 	{
-		print_map(map, height, width, player_y, player_x, vertical, mirror_active);
-		printf("=== Этаж: %d ===\n", level);
+		print_map(&map, player_y, player_x, vertical, mirror_active);
+		printf("=== Этаж: %d ===\n", map.level);
 		printf("\nУправление: W-вверх, A-влево, S-вниз, D-вправо, Q-вернуться домой (только на лестнице D)\n");
 
 		printf("Ваш ход: ");
 		char choice;
 		if (scanf(" %c", &choice) != 1) //Ввод закрыт — выходим, чтобы не зациклиться
 		{
-			free_map(map, height);
+			free_map(&map);
 			break;
 		}
 		clear_buffer(); //Убираем Enter и всё, что напечатали после первой буквы
 
 		if (choice == 'q' || choice == 'Q')
 		{
-			if (map[player_y][player_x] == 'D') //Выход из башни
+			if (map.cells[player_y][player_x] == 'D') //Выход из башни
 			{
-				free_map(map, height);
+				free_map(&map);
 				break;
 			}
 			printf("\nВыход домой возможен только на лестнице вниз (D)!\n");
@@ -351,7 +358,7 @@ void start_adventure(void)
 		else if (choice == 'a' || choice == 'A') next_x--;
 		else if (choice == 'd' || choice == 'D') next_x++;
 
-		char target = map[next_y][next_x]; //Ограничение по препятствиям
+		char target = map.cells[next_y][next_x]; //Ограничение по препятствиям
 		if (target == '#' || target == 'T' || target == 'R')
 		{
 			printf("\nТам препятствие! Путь заблокирован\n");
@@ -359,20 +366,21 @@ void start_adventure(void)
 		}
 		else if (target == 'U') //Лестница наверх
 		{
-			free_map(map, height);
-			level++;
-			generate_map(&map, &height, &width, &player_y, &player_x, &vertical, &s_y, &s_x);
+			int next_level = map.level + 1; //Запоминаем счётчик, т.к. free_map обнуляет размеры
+			free_map(&map);
+			generate_map(&map, &player_y, &player_x, &vertical, &s_y, &s_x);
+			map.level = next_level;
 			mirror_active = 1;
 		}
 		else
 		{
 			player_y = next_y;
 			player_x = next_x;
-			if (map[player_y][player_x] == 'S') //Наступили на переключатель
+			if (map.cells[player_y][player_x] == 'S') //Наступили на переключатель
 			{
 				mirror_active = 0;
-				rebuild_right_half(map, height, width, vertical, player_y, player_x);
-				map[player_y][player_x] = '.'; //Переключатель сработал (одноразовый)
+				rebuild_right_half(&map, vertical, player_y, player_x);
+				map.cells[player_y][player_x] = '.'; //Переключатель сработал (одноразовый)
 				system("pause");
 			}
 		}

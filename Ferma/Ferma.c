@@ -19,8 +19,7 @@ char item_names[MAX_ITEMS][MAX_NAME_LEN];
 
 int fool_check(int scanf_result) //Проверка на дурака
 {
-	int c;
-	while ((c = getchar()) != '\n' && c != EOF); //Чистим буфер
+	void clear_buffer();//Чистим буфер
 
 	if (scanf_result != 1) { //Сама проверка
 		printf("Не целое число.\n");
