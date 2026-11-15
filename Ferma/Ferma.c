@@ -368,16 +368,21 @@ void mirror_map(char** map, int height, int width, int vertical)
 	}
 }
 
-void print_map(char** map, int height, int width, int player_y, int player_x) //Значения переменных(и указателей) даются в основной функции
+void print_map(char** map, int height, int width, int player_y, int player_x, int vertical, int show_mirror)
 {
-	system("cls"); //Очищаем экран перед каждым показом
+	system("cls");
+
+	int mirror_y = vertical ? player_y : height - 1 - player_y;
+	int mirror_x = vertical ? width - 1 - player_x : player_x;
+
 	for (int i = 0; i < height; i++)
 	{
 		for (int j = 0; j < width; j++)
 		{
-			if (i == player_y && j == player_x)
+			if ((i == player_y && j == player_x) ||
+				(show_mirror && i == mirror_y && j == mirror_x))
 			{
-				printf("@"); //Рисуем героя
+				printf("@");
 			}
 			else {
 				printf("%c", map[i][j]);
@@ -617,12 +622,13 @@ void start_adventure(void)
 	int vertical = 0;
 	int level = 1;
 	int s_y = 0, s_x = 0;
+	int mirror_active = 1;
 
 	generate_map(&map, &height, &width, &player_y, &player_x, &vertical, &s_y, &s_x);
 
 	while (1)
 	{
-		print_map(map, height, width, player_y, player_x);
+		print_map(map, height, width, player_y, player_x, vertical, mirror_active);
 		printf("=== Этаж: %d ===\n", level);
 		printf("\nУправление: W-вверх, A-влево, S-вниз, D-вправо, Q-вернуться домой (только на лестнице D)\n");
 
@@ -665,6 +671,7 @@ void start_adventure(void)
 			free_map(map, height);
 			level++;
 			generate_map(&map, &height, &width, &player_y, &player_x, &vertical, &s_y, &s_x);
+			mirror_active = 1;
 		}
 		else
 		{
@@ -672,6 +679,7 @@ void start_adventure(void)
 			player_x = next_x;
 			if (map[player_y][player_x] == 'S') //Наступили на переключатель
 			{
+				mirror_active = 0;
 				rebuild_right_half(map, height, width, vertical, player_y, player_x);
 				map[player_y][player_x] = '.'; //Переключатель сработал (одноразовый)
 				system("pause");
