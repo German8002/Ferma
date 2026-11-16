@@ -12,9 +12,9 @@ Profession profession_choice(void)
     for (;;) {
         printf("Введите номер специальности/профессии, за которую хотите играть:\n");
         printf("[1] Фермер\n[2] Лесоруб\n[3] Шахтёр\n[4] Разведчик\n");
-        if (scanf("%d", &tmp) != 1) {
-            int c;
-            while ((c = getchar()) != '\n' && c != EOF) {}
+        if (scanf("%d", &tmp) != 1) 
+        {
+            clear_buffer();
             printf("Некорректный ввод.\n");
             continue;
         }
@@ -92,7 +92,7 @@ void create_player(Player** p)
     {
         (*p)->cls = (Profession_desc)
         {
-            .bonus_hp = 10,
+            .bonus_hp = 0,
             .bonus_stamina = 25,
             .farmer_bonus = 0,
             .lumberjack_bonus = 0,
@@ -127,8 +127,9 @@ void print_player_card(Player* p, int day, int hour, char item_names[MAX_ITEMS][
     printf("Золото: %d\n", p->gold);
     printf("Текущее время: День %d, %02d:00\n", day, hour);
 
-    const char* prof_name = "Фермер";
-    if (p->cls.lumberjack_bonus)      prof_name = "Лесоруб";
+    const char* prof_name = "Неизвестно"; // на случай, если флаги сбились
+    if (p->cls.farmer_bonus)          prof_name = "Фермер";
+    else if (p->cls.lumberjack_bonus) prof_name = "Лесоруб";
     else if (p->cls.miner_bonus)      prof_name = "Шахтёр";
     else if (p->cls.scout_bonus)      prof_name = "Разведчик";
     printf("Профессия: %s\n", prof_name);
