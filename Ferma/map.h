@@ -17,4 +17,4 @@ void free_map(Map* m);
 void generate_map(Map* m, int* out_y, int* out_x, int* out_vertical, int* out_sy, int* out_sx);
 void clear_buffer(void);
 void rebuild_right_half(Map* m, int vertical, int player_y, int player_x);
-void start_adventure(Player* p);
+void start_adventure(Player* p, int* day, int* hour);

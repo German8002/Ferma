@@ -4,8 +4,7 @@
 #include <windows.h>
 #include "map.h"
 #include "player.h"
-
-#define BASE_GOLD_REWARD 10
+#include "utils.h"
 
 void carve_path(char** map, int y1, int x1, int y2, int x2)//Отдельная вспомогательная функция для прокладывания дороги
 {
@@ -315,15 +314,15 @@ void rebuild_right_half(Map* m, int vertical, int player_y, int player_x)
 	}
 }
 
-void start_adventure(Player* p)
+void start_adventure(Player* p, int* day, int* hour)
 {
-	if (p == NULL)
+	if (p == NULL || day == NULL || hour == NULL)
 	{
 		printf("Сначала создайте персонажа!\n");
 		return;
 	}
 
-	Map map = { NULL, 0, 0, 1 }; //cells, width, height, level (начинаем с 1-го этажа)
+	Map map = { NULL, 0, 0, 1 };
 	p->y = 0;
 	p->x = 0;
 	int vertical = 0;
@@ -336,20 +335,22 @@ void start_adventure(Player* p)
 	{
 		print_map(&map, p->y, p->x, vertical, mirror_active);
 		printf("=== Этаж: %d ===\n", map.level);
+		printf("HP: %d/%d | Выносливость: %d/%d | Золото: %d | Этаж: %d | Время: %02d:00\n",
+			p->hp, p->max_hp, p->stamina, p->max_stamina, p->gold, map.level, *hour);
 		printf("\nУправление: W-вверх, A-влево, S-вниз, D-вправо, Q-вернуться домой (только на лестнице D)\n");
 
 		printf("Ваш ход: ");
 		char choice;
-		if (scanf(" %c", &choice) != 1) //Ввод закрыт — выходим, чтобы не зациклиться
+		if (scanf(" %c", &choice) != 1)
 		{
 			free_map(&map);
 			break;
 		}
-		clear_buffer(); //Убираем Enter и всё, что напечатали после первой буквы
+		clear_buffer();
 
 		if (choice == 'q' || choice == 'Q')
 		{
-			if (map.cells[p->y][p->x] == 'D') //Выход из башни
+			if (map.cells[p->y][p->x] == 'D')
 			{
 				free_map(&map);
 				break;
@@ -366,23 +367,28 @@ void start_adventure(Player* p)
 		else if (choice == 'a' || choice == 'A') next_x--;
 		else if (choice == 'd' || choice == 'D') next_x++;
 
-		char target = map.cells[next_y][next_x]; //Ограничение по препятствиям
+		char target = map.cells[next_y][next_x];
 		if (target == '#' || target == 'T' || target == 'R')
 		{
 			printf("\nТам препятствие! Путь заблокирован\n");
 			system("pause");
 		}
-		else if (target == 'U') //Лестница наверх
+		else if (target == 'U')
 		{
-			int next_level = map.level + 1; //Запоминаем счётчик, т.к. free_map обнуляет размеры
+			int next_level = map.level + 1;
 			free_map(&map);
 			generate_map(&map, &p->y, &p->x, &vertical, &s_y, &s_x);
 			map.level = next_level;
 			mirror_active = 1;
 
-			int reward = BASE_GOLD_REWARD * map.level;// Награда за этаж с учётом профессии
-			if (p->cls.miner_bonus)      reward += reward / 2; // шахтёр +50% золота
-			if (p->cls.lumberjack_bonus) reward += 2;          // лесоруб +2 золота
+			p->stamina -= 5;// Переход на этаж: -5 stamina, +1 час
+			if (p->stamina < 0) p->stamina = 0;
+			*hour += 1;
+			if (*hour >= 24) { *hour = 0; *day += 1; }
+
+			int reward = BASE_GOLD_REWARD * map.level;	// Награда за этаж
+			if (p->cls.miner_bonus)      reward += reward / 2;
+			if (p->cls.lumberjack_bonus) reward += 2;
 			p->gold += reward;
 			printf("\nВы поднялись на %d этаж! Награда: %d золота.\n", map.level, reward);
 		}
@@ -397,13 +403,29 @@ void start_adventure(Player* p)
 			p->stamina -= stamina_cost;
 			if (p->stamina < 0) p->stamina = 0;
 
-			if (map.cells[p->y][p->x] == 'S') //Наступили на переключатель
+			if (map.cells[p->y][p->x] == 'S')
 			{
 				mirror_active = 0;
 				rebuild_right_half(&map, vertical, p->y, p->x);
-				map.cells[p->y][p->x] = '.'; //Переключатель сработал (одноразовый)
+				map.cells[p->y][p->x] = '.';
 				system("pause");
 			}
+		}
+
+		if (p->stamina <= 0 || *hour == 2)// Экстренная эвакуация
+		{
+			if (p->stamina <= 0)
+				printf("\nВы упали без сил! Спасательная служба доставляет вас домой.\n");
+			else
+				printf("\nНаступило 02:00 ночи! Фермер падает без сил.\n");
+
+			int lost = p->gold / 2;
+			p->gold -= lost;
+			printf("За услуги забрали %d золота. Осталось %d.\n", lost, p->gold);
+
+			free_map(&map);
+			system("pause");
+			break;
 		}
 	}
 }

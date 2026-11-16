@@ -4,9 +4,6 @@
 #include <windows.h>
 #include "player.h"
 #include "utils.h"
-#define MAX_FARMER_NAME 32
-#define MAX_ITEMS 10
-#define MAX_NAME_LEN 32
 
 Profession profession_choice(void)
 {
