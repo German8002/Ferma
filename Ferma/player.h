@@ -38,3 +38,7 @@ typedef struct
     int inventory[MAX_ITEMS];
     Profession_desc cls;
 } Player;
+
+void handle_create_player(Player** p);
+void delete_player(Player** p);
+void print_player_card(Player* p, int day, int hour, char item_names[MAX_ITEMS][MAX_NAME_LEN]);

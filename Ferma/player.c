@@ -23,6 +23,7 @@ Profession profession_choice(void)
         }
         if (tmp >= 1 && tmp <= 4) {
             prof = (Profession)(tmp - 1);
+            clear_buffer();
             break;
         }
         printf("Нужно число от 1 до 4.\n");
@@ -129,11 +130,20 @@ void print_player_card(Player* p, int day, int hour, char item_names[MAX_ITEMS][
     printf("Золото: %d\n", p->gold);
     printf("Текущее время: День %d, %02d:00\n", day, hour);
 
+    const char* prof_name = "Фермер";
+    if (p->cls.lumberjack_bonus)      prof_name = "Лесоруб";
+    else if (p->cls.miner_bonus)      prof_name = "Шахтёр";
+    else if (p->cls.scout_bonus)      prof_name = "Разведчик";
+    printf("Профессия: %s\n", prof_name);
+
     printf("Инвентарь:\n");
-    for (int i = 0; i < MAX_ITEMS; i++) 
+    for (int i = 0; i < MAX_ITEMS; i++)
     {
         int id = p->inventory[i];
-        printf("  Слот %d: %s\n", i, item_names[id]);
+        if (id >= 0 && id < MAX_ITEMS)
+            printf("  Слот %d: %s\n", i, item_names[id]);
+        else
+            printf("  Слот %d: Неизвестный предмет [%d]\n", i, id);
     }
 }
 void delete_player(Player** p) //принимает адрес указателя на игрока 
@@ -151,7 +161,7 @@ void handle_create_player(Player** p)
     { 
         printf("Персонаж уже существует. Точно удалить и создать нового? (1 - Да, 0 - Нет): ");
         int confirm;
-        if (scanf_s("%d", &confirm) == 1 && confirm == 1) {
+        if (scanf("%d", &confirm) == 1 && confirm == 1) {
             delete_player(p);      // Удаляем старого
             clear_buffer();        // Чистим буфер
             create_player(p);      // Создаем нового
