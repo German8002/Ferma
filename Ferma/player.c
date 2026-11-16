@@ -105,9 +105,9 @@ void create_player(Player** p)
     }
     }
     (*p)->max_hp = 100 + (*p)->cls.bonus_hp;
-    (*p)->hp = 100;
+    (*p)->hp = (*p)->max_hp;
     (*p)->max_stamina = 50 + (*p)->cls.bonus_stamina;
-    (*p)->stamina = 50;
+    (*p)->stamina = (*p)->max_stamina;
     (*p)->gold = 0;
     int start_inventory[MAX_ITEMS] = { 0,1,2,3,4,5,6,7,8,9 }; // ID предметов
     for (int i = 0; i < MAX_ITEMS; i++) 

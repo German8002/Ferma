@@ -3,6 +3,7 @@
 #include <stdlib.h>
 #include <windows.h>
 #include "map.h"
+#include "player.h"
 
 #define BASE_GOLD_REWARD 10
 
@@ -314,19 +315,26 @@ void rebuild_right_half(Map* m, int vertical, int player_y, int player_x)
 	}
 }
 
-void start_adventure(void)
+void start_adventure(Player* p)
 {
+	if (p == NULL)
+	{
+		printf("Сначала создайте персонажа!\n");
+		return;
+	}
+
 	Map map = { NULL, 0, 0, 1 }; //cells, width, height, level (начинаем с 1-го этажа)
-	int player_y = 0, player_x = 0;
+	p->y = 0;
+	p->x = 0;
 	int vertical = 0;
 	int s_y = 0, s_x = 0;
 	int mirror_active = 1;
 
-	generate_map(&map, &player_y, &player_x, &vertical, &s_y, &s_x);
+	generate_map(&map, &p->y, &p->x, &vertical, &s_y, &s_x);
 
 	while (1)
 	{
-		print_map(&map, player_y, player_x, vertical, mirror_active);
+		print_map(&map, p->y, p->x, vertical, mirror_active);
 		printf("=== Этаж: %d ===\n", map.level);
 		printf("\nУправление: W-вверх, A-влево, S-вниз, D-вправо, Q-вернуться домой (только на лестнице D)\n");
 
@@ -341,7 +349,7 @@ void start_adventure(void)
 
 		if (choice == 'q' || choice == 'Q')
 		{
-			if (map.cells[player_y][player_x] == 'D') //Выход из башни
+			if (map.cells[p->y][p->x] == 'D') //Выход из башни
 			{
 				free_map(&map);
 				break;
@@ -351,8 +359,8 @@ void start_adventure(void)
 			continue;
 		}
 
-		int next_y = player_y;
-		int next_x = player_x;
+		int next_y = p->y;
+		int next_x = p->x;
 		if (choice == 'w' || choice == 'W') next_y--;
 		else if (choice == 's' || choice == 'S') next_y++;
 		else if (choice == 'a' || choice == 'A') next_x--;
@@ -368,19 +376,32 @@ void start_adventure(void)
 		{
 			int next_level = map.level + 1; //Запоминаем счётчик, т.к. free_map обнуляет размеры
 			free_map(&map);
-			generate_map(&map, &player_y, &player_x, &vertical, &s_y, &s_x);
+			generate_map(&map, &p->y, &p->x, &vertical, &s_y, &s_x);
 			map.level = next_level;
 			mirror_active = 1;
+
+			int reward = BASE_GOLD_REWARD * map.level;// Награда за этаж с учётом профессии
+			if (p->cls.miner_bonus)      reward += reward / 2; // шахтёр +50% золота
+			if (p->cls.lumberjack_bonus) reward += 2;          // лесоруб +2 золота
+			p->gold += reward;
+			printf("\nВы поднялись на %d этаж! Награда: %d золота.\n", map.level, reward);
 		}
 		else
 		{
-			player_y = next_y;
-			player_x = next_x;
-			if (map.cells[player_y][player_x] == 'S') //Наступили на переключатель
+			p->y = next_y;
+			p->x = next_x;
+
+			int stamina_cost = 1;
+			if (p->cls.scout_bonus && (rand() % 100) < 50)
+				stamina_cost = 0;
+			p->stamina -= stamina_cost;
+			if (p->stamina < 0) p->stamina = 0;
+
+			if (map.cells[p->y][p->x] == 'S') //Наступили на переключатель
 			{
 				mirror_active = 0;
-				rebuild_right_half(&map, vertical, player_y, player_x);
-				map.cells[player_y][player_x] = '.'; //Переключатель сработал (одноразовый)
+				rebuild_right_half(&map, vertical, p->y, p->x);
+				map.cells[p->y][p->x] = '.'; //Переключатель сработал (одноразовый)
 				system("pause");
 			}
 		}
