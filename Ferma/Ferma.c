@@ -26,47 +26,6 @@ int fool_check(int scanf_result) //Проверка на дурака
 	return 1;
 }
 
-void naming(void)
-{
-	for (;;)//бесконечный цикл for
-	{
-		printf("Введите имя фермера:");
-		fflush(stdout);
-
-		if (fgets(farmer_name, sizeof(farmer_name), stdin) == NULL)
-		{
-			printf("\nВвод прерван.\n");
-			farmer_name[0] = '\0';
-			return;
-		}
-
-		size_t len = strlen(farmer_name);
-
-		if (len > 0 && farmer_name[len - 1] == '\n') //Убираем перевод строки
-		{
-			farmer_name[--len] = '\0';
-		}
-		else
-		{
-			int c = getchar();
-			if (c != '\n' && c != EOF)//Проверка на символ, если последний - не конец строки/перевод - ошибка
-			{
-				while (c != '\n' && c != EOF) c = getchar();
-				printf("Слишком длинное имя. Максимум %d символов.\n", MAX_FARMER_NAME - 1);
-				continue;
-			}
-		}
-
-		if (len == 0)
-		{
-			printf("Имя не может быть пустым. Попробуйте снова.\n");
-			continue;
-		}
-
-		return; //Имя корректно: 1-31 символ
-	}
-}
-
 void read_file(void)
 {
 	strcpy(item_names[0], "Пусто");
@@ -320,15 +279,14 @@ int main()
 	SetConsoleOutputCP(65001);
 	srand((unsigned)time(NULL)); //Нужен для будующей генерации карты(сид зависит от времени)
 	read_file();
-	naming();
 	Player* my_player = NULL;
 	int userAction = -1;
 	do
 	{
-		printf("Привет, %s !\n", farmer_name); //Выводим имя фермера
+		printf("Привет, странник! \n");
 		printf("[0] Выход \n"); //Выводим меню
 		printf("[1] Управление временем \n");
-		printf("[2] Промотать время (Поработать) \n");
+		printf("[2] Создать персонажа \n");
 		printf("[3] Карточка персонажа \n");
 		printf("[4] Положить предмет в слот \n");
 		printf("[5] Выбросить предмет \n");
@@ -337,13 +295,22 @@ int main()
 		printf("[8] Записать состояние в дневник фермера (diary.txt) \n");
 		printf("[9] Распаковщик карты \n");
 		printf("[10] Отправиться в приключение \n");
-		printf("[11] Создать персонажа \n");
 		if (!fool_check(scanf("%d", &userAction))) //Запрашиваем пункт меню с проверкой на дурака
 		{
 			continue;
 		}
 		switch (userAction)
 		{
+		case 1:
+		{
+			handle_time_menu(&current_day, &current_hour, my_player);
+			break;
+		}
+		case 2:
+		{
+			handle_create_player(&my_player);
+			break;
+		}
 		case 3:
 		{
 			if (my_player == NULL) printf("Сначала создайте персонажа!\n");
@@ -383,11 +350,6 @@ int main()
 		case 10:
 		{
 			start_adventure(my_player, &current_day, &current_hour);
-			break;
-		}
-		case 11:
-		{
-			handle_create_player(&my_player);
 			break;
 		}
 		case 0:

@@ -343,6 +343,7 @@ void start_adventure(Player* p, int* day, int* hour)
 		char choice;
 		if (scanf(" %c", &choice) != 1)
 		{
+			printf("Память структуры Map по адресу %p освобождена\n", (void*)&map);
 			free_map(&map);
 			break;
 		}
@@ -352,6 +353,7 @@ void start_adventure(Player* p, int* day, int* hour)
 		{
 			if (map.cells[p->y][p->x] == 'D')
 			{
+				printf("Память структуры Map по адресу %p освобождена\n", (void*)&map);
 				free_map(&map);
 				break;
 			}
@@ -376,6 +378,7 @@ void start_adventure(Player* p, int* day, int* hour)
 		else if (target == 'U')
 		{
 			int next_level = map.level + 1;
+			printf("Память структуры Map по адресу %p освобождена\n", (void*)&map);
 			free_map(&map);
 			generate_map(&map, &p->y, &p->x, &vertical, &s_y, &s_x);
 			map.level = next_level;
@@ -422,7 +425,7 @@ void start_adventure(Player* p, int* day, int* hour)
 			int lost = p->gold / 2;
 			p->gold -= lost;
 			printf("За услуги забрали %d золота. Осталось %d.\n", lost, p->gold);
-
+			printf("Память структуры Map по адресу %p освобождена\n", (void*)&map);
 			free_map(&map);
 			system("pause");
 			break;
