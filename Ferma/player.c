@@ -153,26 +153,110 @@ void delete_player(Player** p) //принимает адрес указател�
         *p = NULL;
     }
 }
-void handle_create_player(Player** p) 
+
+void handle_create_player(Player** p)
 {
     if (*p != NULL) // Если персонаж уже есть
-    { 
+    {
         printf("Персонаж уже существует. Точно удалить и создать нового? (1 - Да, 0 - Нет): ");
         int confirm;
-        if (scanf("%d", &confirm) == 1 && confirm == 1) {
-            delete_player(p);      // Удаляем старого
-            clear_buffer();        // Чистим буфер
-            create_player(p);      // Создаем нового
+
+        if (scanf("%d", &confirm) != 1)
+        {
+            clear_buffer();
+            printf("Некорректный ввод.\n");
+            return;
         }
-        else 
+        clear_buffer(); 
+
+        if (confirm == 1) {
+            delete_player(p);
+            create_player(p);
+        }
+        else
         {
             printf("Создание отменено.\n");
-            clear_buffer();
         }
     }
     else // Если персонажа еще нет
-    { 
-        clear_buffer();
+    {
         create_player(p);
+    }
+}
+
+void item_place(Player* p)
+{
+    if (p == NULL)
+    {
+        printf("Сначала создайте персонажа!\n");
+        return;
+    }
+
+    int item_id;
+    int slot_id;
+
+    printf("Выберите слот, в который хотите положить предмет : ");
+    if (!fool_check(scanf("%d", &slot_id)))
+        return;
+
+    printf("Выберите ID предмета, который хотите положить в этот слот : ");
+    if (!fool_check(scanf("%d", &item_id)))
+        return;
+
+    if (item_id >= 0 && item_id < MAX_ITEMS && slot_id >= 0 && slot_id < MAX_ITEMS)
+    {
+        p->inventory[slot_id] = item_id;
+        printf("Предмет установлен в слот %d.\n", slot_id);
+    }
+    else
+    {
+        printf("Вы ввели неправильное значение слота или ID предмета.\n");
+    }
+}
+
+void item_drop(Player* p)
+{
+    if (p == NULL)
+    {
+        printf("Сначала создайте персонажа!\n");
+        return;
+    }
+
+    int drop_choice;
+    printf("Введите слот, предмет из которого нужно выбросить : ");
+    if (!fool_check(scanf("%d", &drop_choice)))
+        return;
+
+    if (drop_choice >= 0 && drop_choice < MAX_ITEMS)
+    {
+        p->inventory[drop_choice] = 0;
+        printf("Слот %d очищен.\n", drop_choice);
+    }
+    else
+    {
+        printf("Вы ввели неверное значение.\n");
+    }
+}
+
+void unique_finder(Player* p)
+{
+    if (p == NULL)
+    {
+        printf("Сначала создайте персонажа!\n");
+        return;
+    }
+
+    int counts[MAX_ITEMS] = { 0 };
+    for (int i = 0; i < MAX_ITEMS; i++)
+    {
+        if (p->inventory[i] != 0)
+            counts[p->inventory[i]]++;
+    }
+
+    printf("Уникальные находки:\n");
+    for (int id = 1; id < MAX_ITEMS; id++)
+    {
+        if (counts[id] > 0)
+            printf("ID предмета: %d (%s), количество повторов: %d\n", id, item_names[id], counts[id]);
     }
 }

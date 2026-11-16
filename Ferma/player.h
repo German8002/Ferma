@@ -42,3 +42,6 @@ typedef struct
 void handle_create_player(Player** p);
 void delete_player(Player** p);
 void print_player_card(Player* p, int day, int hour, char item_names[MAX_ITEMS][MAX_NAME_LEN]);
+void item_place(Player* p);
+void item_drop(Player* p);
+void unique_finder(Player* p);

@@ -322,7 +322,13 @@ void start_adventure(Player* p, int* day, int* hour)
 		return;
 	}
 
-	Map map = { NULL, 0, 0, 1 };
+	Map* map = (Map*)malloc(sizeof(Map));
+	if (map == NULL) return; // Проверка на выделение памяти
+	map->cells = NULL;
+	map->width = 0;
+	map->height = 0;
+	map->level = 1;
+
 	p->y = 0;
 	p->x = 0;
 	int vertical = 0;
@@ -334,9 +340,9 @@ void start_adventure(Player* p, int* day, int* hour)
 	while (1)
 	{
 		print_map(&map, p->y, p->x, vertical, mirror_active);
-		printf("=== Этаж: %d ===\n", map.level);
+		printf("=== Этаж: %d ===\n", map->level);
 		printf("HP: %d/%d | Выносливость: %d/%d | Золото: %d | Этаж: %d | Время: %02d:00\n",
-			p->hp, p->max_hp, p->stamina, p->max_stamina, p->gold, map.level, *hour);
+			p->hp, p->max_hp, p->stamina, p->max_stamina, p->gold, map->level, *hour);
 		printf("\nУправление: W-вверх, A-влево, S-вниз, D-вправо, Q-вернуться домой (только на лестнице D)\n");
 
 		printf("Ваш ход: ");
@@ -351,7 +357,7 @@ void start_adventure(Player* p, int* day, int* hour)
 
 		if (choice == 'q' || choice == 'Q')
 		{
-			if (map.cells[p->y][p->x] == 'D')
+			if (map->cells[p->y][p->x] == 'D')
 			{
 				printf("Память структуры Map по адресу %p освобождена\n", (void*)&map);
 				free_map(&map);
@@ -369,7 +375,7 @@ void start_adventure(Player* p, int* day, int* hour)
 		else if (choice == 'a' || choice == 'A') next_x--;
 		else if (choice == 'd' || choice == 'D') next_x++;
 
-		char target = map.cells[next_y][next_x];
+		char target = map->cells[next_y][next_x];
 		if (target == '#' || target == 'T' || target == 'R')
 		{
 			printf("\nТам препятствие! Путь заблокирован\n");
@@ -377,11 +383,11 @@ void start_adventure(Player* p, int* day, int* hour)
 		}
 		else if (target == 'U')
 		{
-			int next_level = map.level + 1;
+			int next_level = map->level + 1;
 			printf("Память структуры Map по адресу %p освобождена\n", (void*)&map);
 			free_map(&map);
 			generate_map(&map, &p->y, &p->x, &vertical, &s_y, &s_x);
-			map.level = next_level;
+			map->level = next_level;
 			mirror_active = 1;
 
 			p->stamina -= 5;// Переход на этаж: -5 stamina, +1 час
@@ -389,11 +395,11 @@ void start_adventure(Player* p, int* day, int* hour)
 			*hour += 1;
 			if (*hour >= 24) { *hour = 0; *day += 1; }
 
-			int reward = BASE_GOLD_REWARD * map.level;	// Награда за этаж
+			int reward = BASE_GOLD_REWARD * map->level;	// Награда за этаж
 			if (p->cls.miner_bonus)      reward += reward / 2;
 			if (p->cls.lumberjack_bonus) reward += 2;
 			p->gold += reward;
-			printf("\nВы поднялись на %d этаж! Награда: %d золота.\n", map.level, reward);
+			printf("\nВы поднялись на %d этаж! Награда: %d золота.\n", map->level, reward);
 		}
 		else
 		{
@@ -403,14 +409,16 @@ void start_adventure(Player* p, int* day, int* hour)
 			int stamina_cost = 1;
 			if (p->cls.scout_bonus && (rand() % 100) < 50)
 				stamina_cost = 0;
+			if (p->cls.farmer_bonus && (rand() % 100) < 30)
+				stamina_cost = -1; // Фермер с шансом 30% восстанавливает стамину
 			p->stamina -= stamina_cost;
 			if (p->stamina < 0) p->stamina = 0;
 
-			if (map.cells[p->y][p->x] == 'S')
+			if (map->cells[p->y][p->x] == 'S')
 			{
 				mirror_active = 0;
 				rebuild_right_half(&map, vertical, p->y, p->x);
-				map.cells[p->y][p->x] = '.';
+				map->cells[p->y][p->x] = '.';
 				system("pause");
 			}
 		}
