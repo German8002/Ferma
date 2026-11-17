@@ -49,8 +49,7 @@ int main()
 		}
 		case 3:
 		{
-			if (my_player == NULL) printf("Сначала создайте персонажа!\n");
-			else print_player_card(my_player, current_day, current_hour, item_names);
+			print_player_card(my_player, current_day, current_hour, item_names);
 			break;
 		}
 		case 4:
