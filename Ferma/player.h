@@ -10,7 +10,7 @@
 
 typedef enum
 {
-    FARMER = 0,
+    FARMER = 1,
     LUMBERJACK,
     MINER,
     SCOUT

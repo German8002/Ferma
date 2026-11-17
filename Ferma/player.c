@@ -8,26 +8,24 @@
 Profession profession_choice(void)
 {
     int tmp;
-    Profession prof = FARMER;
     for (;;) {
         printf("Введите номер специальности/профессии, за которую хотите играть:\n");
         printf("[1] Фермер\n[2] Лесоруб\n[3] Шахтёр\n[4] Разведчик\n");
-        if (scanf("%d", &tmp) != 1) 
+
+        if (scanf("%d", &tmp) != 1)
         {
             clear_buffer();
             printf("Некорректный ввод.\n");
             continue;
         }
+
         if (tmp >= 1 && tmp <= 4) {
-            prof = (Profession)(tmp - 1);
             clear_buffer();
-            break;
+            return (Profession)tmp; // <--- Просто возвращаем tmp
         }
         printf("Нужно число от 1 до 4.\n");
     }
-    return prof;
 }
-
 void create_player(Player** p) 
 {
     *p = (Player*)malloc(sizeof(Player)); //выделяем память под структуру 

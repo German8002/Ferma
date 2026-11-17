@@ -432,7 +432,7 @@ void start_adventure(Player* p, int* day, int* hour)
 			if (map->cells[p->y][p->x] == 'S')
 			{
 				mirror_active = 0;
-				rebuild_right_half(map, vertical, p->y, p->x); // УБРАЛИ &
+				rebuild_right_half(map, vertical, p->y, p->x); 
 				map->cells[p->y][p->x] = '.';
 				system("pause");
 			}
@@ -440,6 +440,7 @@ void start_adventure(Player* p, int* day, int* hour)
 
 		if (p->stamina <= 0 || *hour == 2)
 		{
+			system("cls");
 			if (p->stamina <= 0)
 				printf("\nВы упали без сил! Спасательная служба доставляет вас домой.\n");
 			else
