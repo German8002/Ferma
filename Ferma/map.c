@@ -323,7 +323,7 @@ void start_adventure(Player* p, int* day, int* hour)
 	}
 
 	Map* map = (Map*)malloc(sizeof(Map));
-	if (map == NULL) return; // Проверка на выделение памяти
+	if (map == NULL) return;
 	map->cells = NULL;
 	map->width = 0;
 	map->height = 0;
@@ -335,11 +335,11 @@ void start_adventure(Player* p, int* day, int* hour)
 	int s_y = 0, s_x = 0;
 	int mirror_active = 1;
 
-	generate_map(&map, &p->y, &p->x, &vertical, &s_y, &s_x);
+	generate_map(map, &p->y, &p->x, &vertical, &s_y, &s_x); // УБРАЛИ &
 
 	while (1)
 	{
-		print_map(&map, p->y, p->x, vertical, mirror_active);
+		print_map(map, p->y, p->x, vertical, mirror_active); // УБРАЛИ &
 		printf("=== Этаж: %d ===\n", map->level);
 		printf("HP: %d/%d | Выносливость: %d/%d | Золото: %d | Этаж: %d | Время: %02d:00\n",
 			p->hp, p->max_hp, p->stamina, p->max_stamina, p->gold, map->level, *hour);
@@ -349,8 +349,9 @@ void start_adventure(Player* p, int* day, int* hour)
 		char choice;
 		if (scanf(" %c", &choice) != 1)
 		{
-			printf("Память структуры Map по адресу %p освобождена\n", (void*)&map);
-			free_map(&map);
+			printf("Память структуры по адресу %p освобождена\n", (void*)map);
+			free_map(map);
+			free(map);
 			break;
 		}
 		clear_buffer();
@@ -359,8 +360,9 @@ void start_adventure(Player* p, int* day, int* hour)
 		{
 			if (map->cells[p->y][p->x] == 'D')
 			{
-				printf("Память структуры Map по адресу %p освобождена\n", (void*)&map);
-				free_map(&map);
+				printf("Память структуры по адресу %p освобождена\n", (void*)map);
+				free_map(map);
+				free(map);
 				break;
 			}
 			printf("\nВыход домой возможен только на лестнице вниз (D)!\n");
@@ -375,6 +377,14 @@ void start_adventure(Player* p, int* day, int* hour)
 		else if (choice == 'a' || choice == 'A') next_x--;
 		else if (choice == 'd' || choice == 'D') next_x++;
 
+		// ПРОВЕРКА ГРАНИЦ (защита от вылета)
+		if (next_y < 0 || next_y >= map->height || next_x < 0 || next_x >= map->width)
+		{
+			printf("\nВы не можете выйти за пределы карты!\n");
+			system("pause");
+			continue;
+		}
+
 		char target = map->cells[next_y][next_x];
 		if (target == '#' || target == 'T' || target == 'R')
 		{
@@ -384,18 +394,22 @@ void start_adventure(Player* p, int* day, int* hour)
 		else if (target == 'U')
 		{
 			int next_level = map->level + 1;
-			printf("Память структуры Map по адресу %p освобождена\n", (void*)&map);
-			free_map(&map);
-			generate_map(&map, &p->y, &p->x, &vertical, &s_y, &s_x);
+
+			// При переходе на этаж мы НЕ удаляем саму структуру map, 
+			// а только очищаем её внутренний массив cells, чтобы создать новый.
+			printf("Память структуры по адресу %p освобождена\n", (void*)map->cells);
+			free_map(map);
+
+			generate_map(map, &p->y, &p->x, &vertical, &s_y, &s_x); // УБРАЛИ &
 			map->level = next_level;
 			mirror_active = 1;
 
-			p->stamina -= 5;// Переход на этаж: -5 stamina, +1 час
+			p->stamina -= 5;
 			if (p->stamina < 0) p->stamina = 0;
 			*hour += 1;
 			if (*hour >= 24) { *hour = 0; *day += 1; }
 
-			int reward = BASE_GOLD_REWARD * map->level;	// Награда за этаж
+			int reward = BASE_GOLD_REWARD * map->level;
 			if (p->cls.miner_bonus)      reward += reward / 2;
 			if (p->cls.lumberjack_bonus) reward += 2;
 			p->gold += reward;
@@ -410,20 +424,21 @@ void start_adventure(Player* p, int* day, int* hour)
 			if (p->cls.scout_bonus && (rand() % 100) < 50)
 				stamina_cost = 0;
 			if (p->cls.farmer_bonus && (rand() % 100) < 30)
-				stamina_cost = -1; // Фермер с шансом 30% восстанавливает стамину
+				stamina_cost = -1;
 			p->stamina -= stamina_cost;
 			if (p->stamina < 0) p->stamina = 0;
+			if (p->stamina > p->max_stamina) p->stamina = p->max_stamina;
 
 			if (map->cells[p->y][p->x] == 'S')
 			{
 				mirror_active = 0;
-				rebuild_right_half(&map, vertical, p->y, p->x);
+				rebuild_right_half(map, vertical, p->y, p->x); // УБРАЛИ &
 				map->cells[p->y][p->x] = '.';
 				system("pause");
 			}
 		}
 
-		if (p->stamina <= 0 || *hour == 2)// Экстренная эвакуация
+		if (p->stamina <= 0 || *hour == 2)
 		{
 			if (p->stamina <= 0)
 				printf("\nВы упали без сил! Спасательная служба доставляет вас домой.\n");
@@ -433,8 +448,10 @@ void start_adventure(Player* p, int* day, int* hour)
 			int lost = p->gold / 2;
 			p->gold -= lost;
 			printf("За услуги забрали %d золота. Осталось %d.\n", lost, p->gold);
-			printf("Память структуры Map по адресу %p освобождена\n", (void*)&map);
-			free_map(&map);
+
+			printf("Память структуры по адресу %p освобождена\n", (void*)map);
+			free_map(map);
+			free(map);
 			system("pause");
 			break;
 		}
