@@ -9,6 +9,7 @@
 #include "utils.h"
 #include "player.h"
 
+
 int main()
 {
 	SetConsoleCP(65001); //Эта, а также следующая строчка были созданы для грамматной работы консоли(у меня работает только так)
@@ -35,59 +36,59 @@ int main()
 		{
 			continue;
 		}
-		switch (userAction)
+		switch ((MenuOption)userAction)
 		{
-		case 1:
+		case MENU_TIME:
 		{
 			handle_time_menu(&current_day, &current_hour, my_player);
 			break;
 		}
-		case 2:
+		case MENU_CREATE:
 		{
 			handle_create_player(&my_player);
 			break;
 		}
-		case 3:
+		case MENU_CARD:
 		{
 			print_player_card(my_player, current_day, current_hour, item_names);
 			break;
 		}
-		case 4:
+		case MENU_ITEM_PLACE:
 		{
 			item_place(my_player);
 			break;
 		}
-		case 5:
+		case MENU_ITEM_DROP:
 		{
 			item_drop(my_player);
 			break;
 		}
-		case 6:
+		case MENU_UNIQUE:
 		{
 			unique_finder(my_player);
 			break;
 		}
-		case 7:
+		case MENU_COMPARE:
 		{
 			compare_items(my_player);
 			break;
 		}
-		case 8:
+		case MENU_DIARY:
 		{
 			diary_writer(my_player);
 			break;
 		}
-		case 9:
+		case MENU_UNPACK:
 		{
 			map_unpacker();
 			break;
 		}
-		case 10:
+		case MENU_ADVENTURE:
 		{
 			start_adventure(my_player, &current_day, &current_hour);
 			break;
 		}
-		case 0:
+		case MENU_EXIT:
 			break;
 		default:
 			printf("Неверный ввод\n");
