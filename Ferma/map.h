@@ -1,13 +1,17 @@
 #pragma once
 #include "player.h"
+#include "entity.h"
 #define BASE_GOLD_REWARD 10
 
 typedef struct
 {
-	char** cells;  // двумерный динамический массив карты
-	int width;     // ширина
-	int height;    // высота
-	int level;     // счётчик пройденных этажей
+	char** cells;
+	int width;
+	int height;
+	int level;
+
+	Entity* entities; //Массив сущностей
+	int entity_count; //Сколько всего сущностей на этаже
 } Map;
 
 void carve_path(char** map, int y1, int x1, int y2, int x2);

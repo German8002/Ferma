@@ -36,6 +36,8 @@ typedef struct
     int gold;
     int x, y; // Координаты на карте приключения
     int inventory[MAX_ITEMS];
+    int attack;
+    int defense;
     Profession_desc cls;
 } Player;
 

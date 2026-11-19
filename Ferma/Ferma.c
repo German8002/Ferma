@@ -8,7 +8,7 @@
 #include "map.h"
 #include "utils.h"
 #include "player.h"
-
+#include "entity.h"
 
 int main()
 {
