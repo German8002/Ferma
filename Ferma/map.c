@@ -246,6 +246,7 @@ void generate_map(Map* m, int* out_y, int* out_x, int* out_vertical, int* out_sy
 		new_ent.x = ex;
 		new_ent.y = ey;
 		new_ent.is_alive = 1;
+		new_ent.defense = 0;
 
 		float mult = 1.0f + (m->level - 1) * 0.3f;
 
@@ -276,6 +277,7 @@ void generate_map(Map* m, int* out_y, int* out_x, int* out_vertical, int* out_sy
 			new_ent.symbol = 'M';
 			new_ent.hp = new_ent.max_hp = (int)(20 * mult);
 			new_ent.attack = (int)(5 * mult);
+			new_ent.defense = (int)(2 * mult);
 			new_ent.drop_item_id = 9;
 		}
 
@@ -417,6 +419,7 @@ void rebuild_right_half(Map* m, int vertical, int player_y, int player_x)
 		new_ent.x = ex;
 		new_ent.y = ey;
 		new_ent.is_alive = 1;
+		new_ent.defense = 0;
 
 		float mult = 1.0f + (m->level - 1) * 0.3f;
 
@@ -447,6 +450,7 @@ void rebuild_right_half(Map* m, int vertical, int player_y, int player_x)
 			new_ent.symbol = 'M';
 			new_ent.hp = new_ent.max_hp = (int)(20 * mult);
 			new_ent.attack = (int)(5 * mult);
+			new_ent.defense = (int)(2 * mult);
 			new_ent.drop_item_id = 9;
 		}
 
@@ -625,26 +629,15 @@ void start_adventure(Player* p, int* day, int* hour)
 		{
 			Entity* e = &map->entities[ent_index];
 
-			int damage_to_ent = p->attack;
-			e->hp -= damage_to_ent;
-			sprintf(message, "Вы ударили %c на %d урона! (Осталось HP: %d)", e->symbol, damage_to_ent, e->hp > 0 ? e->hp : 0);
+			p->stamina -= 2;
+			if (p->stamina < 0) p->stamina = 0;
 
-			if (e->hp <= 0)
+			if (e->type == ENT_TREE || e->type == ENT_ROCK)
 			{
-				e->is_alive = 0;
-				if (e->type == ENT_MONSTER)
+				e->hp -= p->attack;
+				if (e->hp <= 0)
 				{
-					p->gold += BASE_GOLD_REWARD;
-					sprintf(message, "Монстр побеждён! +%d золота.", BASE_GOLD_REWARD);
-				}
-				else if (e->type == ENT_HEAL)
-				{
-					p->hp += 20;
-					if (p->hp > p->max_hp) p->hp = p->max_hp;
-					sprintf(message, "Вы подобрали аптечку! +20 HP.");
-				}
-				else
-				{
+					e->is_alive = 0;
 					int added = 0;
 					for (int i = 0; i < MAX_ITEMS; i++)
 					{
@@ -655,22 +648,52 @@ void start_adventure(Player* p, int* day, int* hour)
 							break;
 						}
 					}
-					if (added) sprintf(message, "Ресурс собран! Добавлен в инвентарь.");
-					else sprintf(message, "Инвентарь полон! Ресурс потерян.");
+					if (added)
+						sprintf(message, "Вы разрубили объект и получили: %s!", item_names[e->drop_item_id]);
+					else
+						sprintf(message, "Рюкзак полон! Ресурс пропал.");
+				}
+				else
+				{
+					sprintf(message, "Вы ударили %c на %d урона! (Осталось HP: %d)", e->symbol, p->attack, e->hp);
 				}
 			}
-
-			if (e->is_alive && e->type == ENT_MONSTER)
+			else if (e->type == ENT_HEAL)
 			{
-				int damage_to_player = e->attack - p->defense;
-				if (damage_to_player < 1) damage_to_player = 1;
-				p->hp -= damage_to_player;
-				sprintf(message + strlen(message), " Монстр бьёт в ответ на %d!", damage_to_player);
-			}
+				p->y = next_y;
+				p->x = next_x;
+				e->is_alive = 0;
 
+				p->hp += 20;
+				if (p->hp > p->max_hp) p->hp = p->max_hp;
+
+				p->stamina += 15;
+				if (p->stamina > p->max_stamina) p->stamina = p->max_stamina;
+
+				sprintf(message, "Вы подобрали аптечку! +20 HP, +15 Выносливости.");
+			}
+			else if (e->type == ENT_MONSTER)
+			{
+				int hero_dmg = p->attack - (e->defense / 2);
+				if (hero_dmg < 1) hero_dmg = 1;
+				e->hp -= hero_dmg;
+
+				if (e->hp <= 0)
+				{
+					e->is_alive = 0;
+					int gold_reward = 5 * map->level;
+					p->gold += gold_reward;
+					sprintf(message, "Монстр побеждён! +%d золота.", gold_reward);
+				}
+				else
+				{
+					int mon_dmg = e->attack - (p->defense / 2);
+					if (mon_dmg < 1) mon_dmg = 1;
+					p->hp -= mon_dmg;
+					sprintf(message, "Вы ударили монстра на %d! Монстр бьёт в ответ на %d!", hero_dmg, mon_dmg);
+				}
+			}
 			event_msg = 1;
-			p->stamina -= 1;
-			if (p->stamina < 0) p->stamina = 0;
 		}
 		else
 		{

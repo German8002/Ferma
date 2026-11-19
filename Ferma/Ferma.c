@@ -85,7 +85,10 @@ int main()
 		}
 		case MENU_ADVENTURE:
 		{
-			start_adventure(my_player, &current_day, &current_hour);
+			if (can_go_adventure(my_player, current_hour))
+			{
+				start_adventure(my_player, &current_day, &current_hour);
+			}
 			break;
 		}
 		case MENU_EXIT:
