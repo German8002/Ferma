@@ -84,8 +84,8 @@ void print_map(const Map* m, int player_y, int player_x, int vertical, int show_
 	system("cls");
 
 	HANDLE h = GetStdHandle(STD_OUTPUT_HANDLE);
-	const WORD COLOR_NORMAL = FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE;
-	const WORD COLOR_DIM = FOREGROUND_INTENSITY;
+	const WORD COLOR_NORMAL = FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE; // обычный серый (7)
+	const WORD COLOR_DIM = FOREGROUND_INTENSITY;                                   // тёмно-серый (8)
 
 	int height = m->height;
 	int width = m->width;
@@ -98,7 +98,7 @@ void print_map(const Map* m, int player_y, int player_x, int vertical, int show_
 	{
 		for (int j = 0; j < width; j++)
 		{
-			int in_mirror_half = show_mirror && (vertical ? j > mid : i > mid);
+			int in_mirror_half = show_mirror && (vertical ? j > mid : i > mid);// Клетка за стеной (отзеркаленная половина), пока двойник активен
 
 			SetConsoleTextAttribute(h, in_mirror_half ? COLOR_DIM : COLOR_NORMAL);
 
@@ -131,18 +131,18 @@ void print_map(const Map* m, int player_y, int player_x, int vertical, int show_
 		SetConsoleTextAttribute(h, COLOR_NORMAL);
 		printf("\n");
 	}
-	SetConsoleTextAttribute(h, COLOR_NORMAL);
+	SetConsoleTextAttribute(h, COLOR_NORMAL); // возвращаем обычный цвет для остального текста
 }
 
 void free_map(Map* m)
 {
-	if (m->cells == NULL) return;
+	if (m->cells == NULL) return; //Уже освобождено - защита от двойного free
 
 	for (int i = 0; i < m->height; i++)
 	{
-		free(m->cells[i]);
+		free(m->cells[i]); //Освобождаем каждую строку
 	}
-	free(m->cells);
+	free(m->cells); //Освобождаем список адресов строк
 	m->cells = NULL;
 
 	if (m->entities != NULL)
@@ -156,31 +156,32 @@ void free_map(Map* m)
 	m->height = 0;
 }
 
+// Создаёт новую локацию внутри m. Счётчик m->level не меняется - им управляет вызывающий код.
 void generate_map(Map* m, int* out_y, int* out_x, int* out_vertical, int* out_sy, int* out_sx)
 {
-	int vertical = rand() % 2;
-	int height = rand() % 26 + 5;
-	int width = rand() % 26 + 5;
-	if (vertical) width = (rand() % 12) * 2 + 7;
-	else height = (rand() % 12) * 2 + 7;
-	int mid = vertical ? width / 2 : height / 2;
+	int vertical = rand() % 2; //1 - стена вертикальная, 0 - горизонтальная
+	int height = rand() % 26 + 5; //от 5 до 30(Высота)
+	int width = rand() % 26 + 5; //Длина
+	if (vertical) width = (rand() % 12) * 2 + 7; //Делаем длину нечётной для нормального отзеркаливания
+	else height = (rand() % 12) * 2 + 7; //Делаем высоту нечётной для нормального отзеркаливания
+	int mid = vertical ? width / 2 : height / 2; //Номер строчки или столба, по которому идёт сама стена(для зеркала)
 	m->height = height;
 	m->width = width;
 	*out_vertical = vertical;
 
-	char** map = (char**)malloc(height * sizeof(char*));
+	char** map = (char**)malloc(height * sizeof(char*)); //Память под список строк
 	for (int i = 0; i < height; i++)
 	{
-		map[i] = (char*)malloc(width * sizeof(char));
+		map[i] = (char*)malloc(width * sizeof(char)); //Память под каждую строку
 	}
 	m->cells = map;
 
-	for (int i = 0; i < height; i++)
+	for (int i = 0; i < height; i++)// Наполнение карты
 	{
 		for (int j = 0; j < width; j++)
 		{
 			int on_middle = vertical ? (j == mid) : (i == mid);
-			if (i == 0 || i == height - 1 || j == 0 || j == width - 1 || on_middle)
+			if (i == 0 || i == height - 1 || j == 0 || j == width - 1 || on_middle)//Выставляем стены
 			{
 				map[i][j] = '#';
 			}
@@ -208,6 +209,7 @@ void generate_map(Map* m, int* out_y, int* out_x, int* out_vertical, int* out_sy
 		s_x = rand() % max_x + 1;
 	} while ((s_y == y && s_x == x) || (s_y == u_y && s_x == u_x));
 
+	// Спавним сущности до прокладки дорог
 	int half_area = vertical ? (height * mid) : (mid * width);
 	int target_entities = half_area / 5;
 	int max_entities = height * width;
@@ -240,56 +242,18 @@ void generate_map(Map* m, int* out_y, int* out_x, int* out_vertical, int* out_sy
 		}
 		if (occupied) continue;
 
-		Entity new_ent;
-		new_ent.x = ex;
-		new_ent.y = ey;
-		new_ent.is_alive = 1;
-		new_ent.defense = 0;
-
-		float mult = 1.0f + (m->level - 1) * 0.3f;
-
-		int type_rand = rand() % 100;
-		if (type_rand < 40) {
-			new_ent.type = ENT_TREE;
-			new_ent.symbol = 'T';
-			new_ent.hp = new_ent.max_hp = (int)(10 * mult);
-			new_ent.attack = 0;
-			new_ent.drop_item_id = 1;
-		}
-		else if (type_rand < 80) {
-			new_ent.type = ENT_ROCK;
-			new_ent.symbol = 'R';
-			new_ent.hp = new_ent.max_hp = (int)(15 * mult);
-			new_ent.attack = 0;
-			new_ent.drop_item_id = 2;
-		}
-		else if (type_rand < 90) {
-			new_ent.type = ENT_HEAL;
-			new_ent.symbol = '+';
-			new_ent.hp = new_ent.max_hp = 1;
-			new_ent.attack = 0;
-			new_ent.drop_item_id = 0;
-		}
-		else {
-			new_ent.type = ENT_MONSTER;
-			new_ent.symbol = 'M';
-			new_ent.hp = new_ent.max_hp = (int)(20 * mult);
-			new_ent.attack = (int)(5 * mult);
-			new_ent.defense = (int)(2 * mult);
-			new_ent.drop_item_id = 10;
-		}
-
+		Entity new_ent = entity_create(ex, ey, m->level);//Создаём энтити с помощью функции из entity.c
 		m->entities[m->entity_count++] = new_ent;
 		spawned++;
 	}
 
-	carve_path(m, y, x, u_y, u_x);
-	carve_path(m, y, x, s_y, s_x);
+	carve_path(m, y, x, u_y, u_x);//Прокладываем дорогу для U
+	carve_path(m, y, x, s_y, s_x);//Прокладываем дорогу для S
 
-	map[y][x] = 'D';
-	map[s_y][s_x] = 'S';
+	map[y][x] = 'D'; //Лестница вниз под героем — до зеркала
+	map[s_y][s_x] = 'S'; //Переключатель — до зеркала
 
-	int placed = 0;
+	int placed = 0;//U — в случайную половину, до зеркала (если слева — отзеркалится вправо)
 	int guard = 0;
 	while (!placed && guard < 10000)
 	{
@@ -311,7 +275,7 @@ void generate_map(Map* m, int* out_y, int* out_x, int* out_vertical, int* out_sy
 		}
 		guard++;
 	}
-	if (!placed)
+	if (!placed)//Подстраховка: если не нашли место — берём любую свободную клетку
 	{
 		for (int i = 1; i < height - 1 && !placed; i++)
 			for (int j = 1; j < width - 1 && !placed; j++)
@@ -322,7 +286,7 @@ void generate_map(Map* m, int* out_y, int* out_x, int* out_vertical, int* out_sy
 				}
 	}
 
-	mirror_map(m, vertical);
+	mirror_map(m, vertical); //Зеркалим — если U была слева, она появится и справа
 
 	for (int i = 0; i < height; i++) {
 		for (int j = 0; j < width; j++) {
@@ -349,7 +313,7 @@ void rebuild_right_half(Map* m, int vertical, int player_y, int player_x)
 	int width = m->width;
 	int mid = vertical ? width / 2 : height / 2;
 
-	int u_y = -1, u_x = -1;
+	int u_y = -1, u_x = -1;//Запоминаем, была ли U в перестраиваемой половине и где именно
 	if (vertical)
 	{
 		for (int i = 1; i < height - 1; i++)
@@ -363,12 +327,12 @@ void rebuild_right_half(Map* m, int vertical, int player_y, int player_x)
 				if (map[i][j] == 'U') { u_y = i; u_x = j; }
 	}
 
-	if (vertical)
+	if (vertical)// Убираем разделяющую стену — делаем её проходимой
 		for (int i = 1; i < height - 1; i++) map[i][mid] = '.';
 	else
 		for (int j = 1; j < width - 1; j++) map[mid][j] = '.';
 
-	if (vertical)
+	if (vertical) //Перестраиваем половину
 	{
 		for (int i = 1; i < height - 1; i++)
 			for (int j = mid + 1; j < width - 1; j++)
@@ -385,6 +349,7 @@ void rebuild_right_half(Map* m, int vertical, int player_y, int player_x)
 			}
 	}
 
+	// Удаляем старые сущности из перестроенной половины
 	for (int k = 0; k < m->entity_count; k++)
 	{
 		if (m->entities[k].is_alive)
@@ -394,6 +359,7 @@ void rebuild_right_half(Map* m, int vertical, int player_y, int player_x)
 		}
 	}
 
+	// Спавним новые сущности
 	int half_area = vertical ? (height * (width - mid)) : ((height - mid) * width);
 	int target_entities = half_area / 5;
 
@@ -423,54 +389,16 @@ void rebuild_right_half(Map* m, int vertical, int player_y, int player_x)
 		}
 		if (occupied) continue;
 
-		Entity new_ent;
-		new_ent.x = ex;
-		new_ent.y = ey;
-		new_ent.is_alive = 1;
-		new_ent.defense = 0;
-
-		float mult = 1.0f + (m->level - 1) * 0.3f;
-
-		int type_rand = rand() % 100;
-		if (type_rand < 40) {
-			new_ent.type = ENT_TREE;
-			new_ent.symbol = 'T';
-			new_ent.hp = new_ent.max_hp = (int)(10 * mult);
-			new_ent.attack = 0;
-			new_ent.drop_item_id = 1;
-		}
-		else if (type_rand < 80) {
-			new_ent.type = ENT_ROCK;
-			new_ent.symbol = 'R';
-			new_ent.hp = new_ent.max_hp = (int)(15 * mult);
-			new_ent.attack = 0;
-			new_ent.drop_item_id = 2;
-		}
-		else if (type_rand < 90) {
-			new_ent.type = ENT_HEAL;
-			new_ent.symbol = '+';
-			new_ent.hp = new_ent.max_hp = 1;
-			new_ent.attack = 0;
-			new_ent.drop_item_id = 0;
-		}
-		else {
-			new_ent.type = ENT_MONSTER;
-			new_ent.symbol = 'M';
-			new_ent.hp = new_ent.max_hp = (int)(20 * mult);
-			new_ent.attack = (int)(5 * mult);
-			new_ent.defense = (int)(2 * mult);
-			new_ent.drop_item_id = 10;
-		}
-
+		Entity new_ent = entity_create(ex, ey, m->level);
 		m->entities[m->entity_count++] = new_ent;
 		spawned++;
 	}
 
-	if (u_y >= 0)
+	if (u_y >= 0)// Если U уже была справа — возвращаем её на место
 	{
 		map[u_y][u_x] = 'U';
 	}
-	else
+	else// U справа не было — создаём новую
 	{
 		int placed = 0, guard = 0;
 		while (!placed && guard < 10000)
@@ -507,12 +435,13 @@ void rebuild_right_half(Map* m, int vertical, int player_y, int player_x)
 		}
 	}
 
+	// Прорубаем дороги в конце, чтобы они были чистыми
 	if (u_y >= 0)
 	{
 		carve_path(m, player_y, player_x, u_y, u_x);
 		map[u_y][u_x] = 'U';
 
-		int d_y = -1, d_x = -1;
+		int d_y = -1, d_x = -1;//Ищем D, чтобы прорубить дорогу и до него
 		for (int i = 1; i < height - 1; i++)
 			for (int j = 1; j < width - 1; j++)
 				if (map[i][j] == 'D') { d_y = i; d_x = j; }
@@ -647,88 +576,7 @@ void start_adventure(Player* p, int* day, int* hour)
 		else if (ent_index != -1)
 		{
 			Entity* e = &map->entities[ent_index];
-
-			p->stamina -= 2;
-			if (p->stamina < 0) p->stamina = 0;
-
-			if (e->type == ENT_TREE || e->type == ENT_ROCK)
-			{
-				e->hp -= p->attack;
-				if (e->hp <= 0)
-				{
-					e->is_alive = 0;
-					int added = 0;
-					for (int i = 0; i < MAX_ITEMS; i++)
-					{
-						if (p->inventory[i] == 0)
-						{
-							p->inventory[i] = e->drop_item_id;
-							added = 1;
-							break;
-						}
-					}
-					if (added)
-						sprintf(message, "Вы разрубили объект и получили: %s!", item_names[e->drop_item_id]);
-					else
-						sprintf(message, "Рюкзак полон! Ресурс пропал.");
-				}
-				else
-				{
-					sprintf(message, "Вы ударили %c на %d урона! (Осталось HP: %d)", e->symbol, p->attack, e->hp);
-				}
-			}
-			else if (e->type == ENT_HEAL)
-			{
-				p->y = next_y;
-				p->x = next_x;
-				e->is_alive = 0;
-
-				p->hp += 20;
-				if (p->hp > p->max_hp) p->hp = p->max_hp;
-
-				p->stamina += 15;
-				if (p->stamina > p->max_stamina) p->stamina = p->max_stamina;
-
-				sprintf(message, "Вы подобрали аптечку! +20 HP, +15 Выносливости.");
-			}
-			else if (e->type == ENT_MONSTER)
-			{
-				int hero_dmg = p->attack - (e->defense / 2);
-				if (hero_dmg < 1) hero_dmg = 1;
-				e->hp -= hero_dmg;
-
-				if (e->hp <= 0)
-				{
-					e->is_alive = 0;
-					int gold_reward = 5 * map->level;
-					p->gold += gold_reward;
-
-					char loot_msg[100] = "";
-					if (rand() % 100 < 25)
-					{
-						int added = 0;
-						for (int i = 0; i < MAX_ITEMS; i++)
-						{
-							if (p->inventory[i] == 0)
-							{
-								p->inventory[i] = 10;
-								added = 1;
-								break;
-							}
-						}
-						if (added) sprintf(loot_msg, " И трофей: %s!", item_names[10]);
-						else sprintf(loot_msg, " Рюкзак полон, клык потерян.");
-					}
-					sprintf(message, "Монстр побеждён! +%d золота.%s", gold_reward, loot_msg);
-				}
-				else
-				{
-					int mon_dmg = e->attack - (p->defense / 2);
-					if (mon_dmg < 1) mon_dmg = 1;
-					p->hp -= mon_dmg;
-					sprintf(message, "Вы ударили монстра на %d! Монстр бьёт в ответ на %d!", hero_dmg, mon_dmg);
-				}
-			}
+			entity_damage(e, p, message);
 			event_msg = 1;
 		}
 		else

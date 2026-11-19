@@ -1,15 +1,17 @@
 #pragma once
+#include "player.h"
 
-typedef enum 
+typedef enum
 {
 	ENT_TREE,
 	ENT_ROCK,
 	ENT_HEAL,
 	ENT_MONSTER
 } EntityType;
-typedef struct 
+
+typedef struct
 {
-	enum EntityType type; // РЕСУРС, МОНСТР, АПТЕЧКА
+	EntityType type; // РЕСУРС, МОНСТР, АПТЕЧКА
 	char symbol; // 'T', 'R', 'M', '+'
 	int x, y; // Координаты на карте
 	int hp, max_hp; // Прочность ресурса или здоровье зверя
@@ -17,5 +19,7 @@ typedef struct
 	int defense;
 	int drop_item_id; // Какой ID предмета из items.txt упадёт в рюкзак
 	int is_alive; // 1 -- объект на карте, 0 -- уничтожен/собран
-} Entity ;
+} Entity;
 
+Entity entity_create(int x, int y, int level);
+void entity_damage(Entity* e, Player* p, char* out_message);
