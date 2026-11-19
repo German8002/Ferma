@@ -6,20 +6,46 @@
 #include "player.h"
 #include "utils.h"
 
-void carve_path(char** map, int y1, int x1, int y2, int x2)//Отдельная вспомогательная функция для прокладывания дороги
+//Отдельная вспомогательная функция для прокладывания дороги
+void carve_path(Map* m, int y1, int x1, int y2, int x2)
 {
 	int cy = y1, cx = x1;
+
+	// Идем по X
 	while (cx != x2)
 	{
-		map[cy][cx] = '.';
 		cx += (x2 > cx) ? 1 : -1;
+		m->cells[cy][cx] = '.';
+
+		// Убиваем всё, что стоит на пути
+		for (int k = 0; k < m->entity_count; k++) {
+			if (m->entities[k].is_alive && m->entities[k].x == cx && m->entities[k].y == cy) {
+				m->entities[k].is_alive = 0;
+			}
+		}
 	}
+
+	// Идем по Y
 	while (cy != y2)
 	{
-		map[cy][cx] = '.';
 		cy += (y2 > cy) ? 1 : -1;
+		m->cells[cy][cx] = '.';
+
+		// Убиваем всё, что стоит на пути
+		for (int k = 0; k < m->entity_count; k++) {
+			if (m->entities[k].is_alive && m->entities[k].x == cx && m->entities[k].y == cy) {
+				m->entities[k].is_alive = 0;
+			}
+		}
 	}
-	map[cy][cx] = '.'; //последняя клетка тоже
+
+	// Последняя клетка тоже
+	m->cells[cy][cx] = '.';
+	for (int k = 0; k < m->entity_count; k++) {
+		if (m->entities[k].is_alive && m->entities[k].x == cx && m->entities[k].y == cy) {
+			m->entities[k].is_alive = 0;
+		}
+	}
 }
 
 void mirror_map(Map* m, int vertical)
@@ -110,13 +136,13 @@ void print_map(const Map* m, int player_y, int player_x, int vertical, int show_
 
 void free_map(Map* m)
 {
-	if (m->cells == NULL) return;
+	if (m->cells == NULL) return; //Уже освобождено - защита от двойного free
 
 	for (int i = 0; i < m->height; i++)
 	{
-		free(m->cells[i]);
+		free(m->cells[i]); //Освобождаем каждую строку
 	}
-	free(m->cells);
+	free(m->cells); //Освобождаем список адресов строк
 	m->cells = NULL;
 
 	if (m->entities != NULL)
@@ -133,29 +159,29 @@ void free_map(Map* m)
 // Создаёт новую локацию внутри m. Счётчик m->level не меняется - им управляет вызывающий код.
 void generate_map(Map* m, int* out_y, int* out_x, int* out_vertical, int* out_sy, int* out_sx)
 {
-	int vertical = rand() % 2;
-	int height = rand() % 26 + 5;
-	int width = rand() % 26 + 5;
-	if (vertical) width = (rand() % 12) * 2 + 7;
-	else height = (rand() % 12) * 2 + 7;
-	int mid = vertical ? width / 2 : height / 2;
+	int vertical = rand() % 2; //1 - стена вертикальная, 0 - горизонтальная
+	int height = rand() % 26 + 5; //от 5 до 30(Высота)
+	int width = rand() % 26 + 5; //Длина
+	if (vertical) width = (rand() % 12) * 2 + 7; //Делаем длину нечётной для нормального отзеркаливания
+	else height = (rand() % 12) * 2 + 7; //Делаем высоту нечётной для нормального отзеркаливания
+	int mid = vertical ? width / 2 : height / 2; //Номер строчки или столба, по которому идёт сама стена(для зеркала)
 	m->height = height;
 	m->width = width;
 	*out_vertical = vertical;
 
-	char** map = (char**)malloc(height * sizeof(char*));
+	char** map = (char**)malloc(height * sizeof(char*)); //Память под список строк
 	for (int i = 0; i < height; i++)
 	{
-		map[i] = (char*)malloc(width * sizeof(char));
+		map[i] = (char*)malloc(width * sizeof(char)); //Память под каждую строку
 	}
 	m->cells = map;
 
-	for (int i = 0; i < height; i++)
+	for (int i = 0; i < height; i++)// Наполнение карты
 	{
 		for (int j = 0; j < width; j++)
 		{
 			int on_middle = vertical ? (j == mid) : (i == mid);
-			if (i == 0 || i == height - 1 || j == 0 || j == width - 1 || on_middle)
+			if (i == 0 || i == height - 1 || j == 0 || j == width - 1 || on_middle)//Выставляем стены
 			{
 				map[i][j] = '#';
 			}
@@ -183,11 +209,85 @@ void generate_map(Map* m, int* out_y, int* out_x, int* out_vertical, int* out_sy
 		s_x = rand() % max_x + 1;
 	} while ((s_y == y && s_x == x) || (s_y == u_y && s_x == u_x));
 
-	carve_path(map, y, x, u_y, u_x);
-	carve_path(map, y, x, s_y, s_x);
+	// Спавним сущности до прокладки дорог
+	int half_area = vertical ? (height * mid) : (mid * width);
+	int target_entities = half_area / 5;
+	int max_entities = height * width;
+	m->entities = (Entity*)malloc(max_entities * sizeof(Entity));
+	m->entity_count = 0;
 
-	map[y][x] = 'D';
-	map[s_y][s_x] = 'S';
+	int spawned = 0;
+	int attempts = 0;
+	while (spawned < target_entities && attempts < max_entities * 20)
+	{
+		attempts++;
+		int ey = rand() % (height - 2) + 1;
+		int ex = rand() % (width - 2) + 1;
+
+		if (vertical) {
+			if (ex >= mid) continue;
+		}
+		else {
+			if (ey >= mid) continue;
+		}
+
+		if (map[ey][ex] != '.') continue;
+
+		int occupied = 0;
+		for (int k = 0; k < m->entity_count; k++) {
+			if (m->entities[k].is_alive && m->entities[k].x == ex && m->entities[k].y == ey) {
+				occupied = 1;
+				break;
+			}
+		}
+		if (occupied) continue;
+
+		Entity new_ent;
+		new_ent.x = ex;
+		new_ent.y = ey;
+		new_ent.is_alive = 1;
+
+		float mult = 1.0f + (m->level - 1) * 0.3f;
+
+		int type_rand = rand() % 100;
+		if (type_rand < 40) {
+			new_ent.type = ENT_TREE; //15% дерево(Откуда оно в башне?Ну, я не знаю)
+			new_ent.symbol = 'T';
+			new_ent.hp = new_ent.max_hp = (int)(10 * mult);
+			new_ent.attack = 0;
+			new_ent.drop_item_id = 1;
+		}
+		else if (type_rand < 80) {
+			new_ent.type = ENT_ROCK; //10% камень
+			new_ent.symbol = 'R';
+			new_ent.hp = new_ent.max_hp = (int)(15 * mult);
+			new_ent.attack = 0;
+			new_ent.drop_item_id = 2;
+		}
+		else if (type_rand < 90) {
+			new_ent.type = ENT_HEAL;
+			new_ent.symbol = '+';
+			new_ent.hp = new_ent.max_hp = 1;
+			new_ent.attack = 0;
+			new_ent.drop_item_id = 0;
+		}
+		else {
+			new_ent.type = ENT_MONSTER;
+			new_ent.symbol = 'M';
+			new_ent.hp = new_ent.max_hp = (int)(20 * mult);
+			new_ent.attack = (int)(5 * mult);
+			new_ent.drop_item_id = 9;
+		}
+
+		m->entities[m->entity_count++] = new_ent;
+		spawned++;
+	}
+
+	carve_path(m, y, x, u_y, u_x);//Прокладываем дорогу для U
+	carve_path(m, y, x, s_y, s_x);//Прокладываем дорогу для S
+
+	map[y][x] = 'D'; //Лестница вниз под героем — до зеркала
+	map[s_y][s_x] = 'S'; //Переключатель — до зеркала
 
 	int placed = 0;
 	int guard = 0;
@@ -222,25 +322,84 @@ void generate_map(Map* m, int* out_y, int* out_x, int* out_vertical, int* out_sy
 				}
 	}
 
-	int half_area = vertical ? (height * mid) : (mid * width);
-	int target_entities = half_area / 7;
-	int max_entities = height * width; // Выделяем память с огромным запасом на всю карту
-	m->entities = (Entity*)malloc(max_entities * sizeof(Entity));
-	m->entity_count = 0;
+	mirror_map(m, vertical); //Зеркалим
+
+	*out_y = y;
+	*out_x = x;
+	*out_sy = s_y;
+	*out_sx = s_x;
+}
+
+void rebuild_right_half(Map* m, int vertical, int player_y, int player_x)
+{
+	char** map = m->cells;
+	int height = m->height;
+	int width = m->width;
+	int mid = vertical ? width / 2 : height / 2;
+
+	int u_y = -1, u_x = -1;//Запоминаем, была ли U в перестраиваемой половине и где именно
+	if (vertical)
+	{
+		for (int i = 1; i < height - 1; i++)
+			for (int j = mid + 1; j < width - 1; j++)
+				if (map[i][j] == 'U') { u_y = i; u_x = j; }
+	}
+	else
+	{
+		for (int i = mid + 1; i < height - 1; i++)
+			for (int j = 1; j < width - 1; j++)
+				if (map[i][j] == 'U') { u_y = i; u_x = j; }
+	}
+
+	if (vertical)// Убираем разделяющую стену — делаем её проходимой
+		for (int i = 1; i < height - 1; i++) map[i][mid] = '.';
+	else
+		for (int j = 1; j < width - 1; j++) map[mid][j] = '.';
+
+	if (vertical) //Перестраиваем половину
+	{
+		for (int i = 1; i < height - 1; i++)
+			for (int j = mid + 1; j < width - 1; j++)
+			{
+				map[i][j] = '.';
+			}
+	}
+	else
+	{
+		for (int i = mid + 1; i < height - 1; i++)
+			for (int j = 1; j < width - 1; j++)
+			{
+				map[i][j] = '.';
+			}
+	}
+
+	// Удаляем старые сущности из перестроенной половины
+	for (int k = 0; k < m->entity_count; k++)
+	{
+		if (m->entities[k].is_alive)
+		{
+			int in_rebuilt_half = vertical ? (m->entities[k].x > mid) : (m->entities[k].y > mid);
+			if (in_rebuilt_half) m->entities[k].is_alive = 0;
+		}
+	}
+
+	// Спавним новые сущности
+	int half_area = vertical ? (height * (width - mid)) : ((height - mid) * width);
+	int target_entities = half_area / 5;
 
 	int spawned = 0;
 	int attempts = 0;
-	while (spawned < target_entities && attempts < max_entities * 20)
+	while (spawned < target_entities && attempts < target_entities * 20)
 	{
 		attempts++;
 		int ey = rand() % (height - 2) + 1;
 		int ex = rand() % (width - 2) + 1;
 
 		if (vertical) {
-			if (ex >= mid) continue;
+			if (ex <= mid) continue;
 		}
 		else {
-			if (ey >= mid) continue;
+			if (ey <= mid) continue;
 		}
 
 		if (map[ey][ex] != '.') continue;
@@ -253,24 +412,6 @@ void generate_map(Map* m, int* out_y, int* out_x, int* out_vertical, int* out_sy
 			}
 		}
 		if (occupied) continue;
-
-		int too_close = 0;
-		for (int dy = -1; dy <= 1; dy++) {
-			for (int dx = -1; dx <= 1; dx++) {
-				if (dx == 0 && dy == 0) continue;
-				int check_x = ex + dx;
-				int check_y = ey + dy;
-				for (int k = 0; k < m->entity_count; k++) {
-					if (m->entities[k].is_alive && m->entities[k].x == check_x && m->entities[k].y == check_y) {
-						too_close = 1;
-						break;
-					}
-				}
-				if (too_close) break;
-			}
-			if (too_close) break;
-		}
-		if (too_close) continue;
 
 		Entity new_ent;
 		new_ent.x = ex;
@@ -313,62 +454,11 @@ void generate_map(Map* m, int* out_y, int* out_x, int* out_vertical, int* out_sy
 		spawned++;
 	}
 
-	mirror_map(m, vertical);
-
-	*out_y = y;
-	*out_x = x;
-	*out_sy = s_y;
-	*out_sx = s_x;
-}
-
-void rebuild_right_half(Map* m, int vertical, int player_y, int player_x)
-{
-	char** map = m->cells;
-	int height = m->height;
-	int width = m->width;
-	int mid = vertical ? width / 2 : height / 2;
-
-	int u_y = -1, u_x = -1;
-	if (vertical)
-	{
-		for (int i = 1; i < height - 1; i++)
-			for (int j = mid + 1; j < width - 1; j++)
-				if (map[i][j] == 'U') { u_y = i; u_x = j; }
-	}
-	else
-	{
-		for (int i = mid + 1; i < height - 1; i++)
-			for (int j = 1; j < width - 1; j++)
-				if (map[i][j] == 'U') { u_y = i; u_x = j; }
-	}
-
-	if (vertical)
-		for (int i = 1; i < height - 1; i++) map[i][mid] = '.';
-	else
-		for (int j = 1; j < width - 1; j++) map[mid][j] = '.';
-
-	if (vertical)
-	{
-		for (int i = 1; i < height - 1; i++)
-			for (int j = mid + 1; j < width - 1; j++)
-			{
-				map[i][j] = '.';
-			}
-	}
-	else
-	{
-		for (int i = mid + 1; i < height - 1; i++)
-			for (int j = 1; j < width - 1; j++)
-			{
-				map[i][j] = '.';
-			}
-	}
-
-	if (u_y >= 0)
+	if (u_y >= 0)// Если U уже была справа — возвращаем её на место
 	{
 		map[u_y][u_x] = 'U';
 	}
-	else
+	else// U справа не было — создаём новую
 	{
 		int placed = 0, guard = 0;
 		while (!placed && guard < 10000)
@@ -405,118 +495,21 @@ void rebuild_right_half(Map* m, int vertical, int player_y, int player_x)
 		}
 	}
 
+	// Прорубаем дороги в конце, чтобы они были чистыми
 	if (u_y >= 0)
 	{
-		carve_path(map, player_y, player_x, u_y, u_x);
+		carve_path(m, player_y, player_x, u_y, u_x);
 		map[u_y][u_x] = 'U';
 
-		int d_y = -1, d_x = -1;
+		int d_y = -1, d_x = -1;//Ищем D, чтобы прорубить дорогу и до него
 		for (int i = 1; i < height - 1; i++)
 			for (int j = 1; j < width - 1; j++)
 				if (map[i][j] == 'D') { d_y = i; d_x = j; }
 		if (d_y >= 0)
 		{
-			carve_path(map, player_y, player_x, d_y, d_x);
+			carve_path(m, player_y, player_x, d_y, d_x);
 			map[d_y][d_x] = 'D';
 		}
-	}
-
-	for (int k = 0; k < m->entity_count; k++)
-	{
-		if (m->entities[k].is_alive)
-		{
-			int in_rebuilt_half = vertical ? (m->entities[k].x > mid) : (m->entities[k].y > mid);
-			if (in_rebuilt_half) m->entities[k].is_alive = 0;
-		}
-	}
-
-	int half_area = vertical ? (height * (width - mid)) : ((height - mid) * width);
-	int target_entities = half_area / 7;
-
-	int spawned = 0;
-	int attempts = 0;
-
-	while (spawned < target_entities && attempts < target_entities * 20)
-	{
-		attempts++;
-		int ey = rand() % (height - 2) + 1;
-		int ex = rand() % (width - 2) + 1;
-
-		if (vertical) {
-			if (ex <= mid) continue;
-		}
-		else {
-			if (ey <= mid) continue;
-		}
-
-		if (map[ey][ex] != '.') continue;
-
-		int occupied = 0;
-		for (int k = 0; k < m->entity_count; k++) {
-			if (m->entities[k].is_alive && m->entities[k].x == ex && m->entities[k].y == ey) {
-				occupied = 1;
-				break;
-			}
-		}
-		if (occupied) continue;
-
-		int too_close = 0;
-		for (int dy = -1; dy <= 1; dy++) {
-			for (int dx = -1; dx <= 1; dx++) {
-				if (dx == 0 && dy == 0) continue;
-				int check_x = ex + dx;
-				int check_y = ey + dy;
-				for (int k = 0; k < m->entity_count; k++) {
-					if (m->entities[k].is_alive && m->entities[k].x == check_x && m->entities[k].y == check_y) {
-						too_close = 1;
-						break;
-					}
-				}
-				if (too_close) break;
-			}
-			if (too_close) break;
-		}
-		if (too_close) continue;
-
-		Entity new_ent;
-		new_ent.x = ex;
-		new_ent.y = ey;
-		new_ent.is_alive = 1;
-
-		float mult = 1.0f + (m->level - 1) * 0.3f;
-
-		int type_rand = rand() % 100;
-		if (type_rand < 40) {
-			new_ent.type = ENT_TREE;
-			new_ent.symbol = 'T';
-			new_ent.hp = new_ent.max_hp = (int)(10 * mult);
-			new_ent.attack = 0;
-			new_ent.drop_item_id = 1;
-		}
-		else if (type_rand < 80) {
-			new_ent.type = ENT_ROCK;
-			new_ent.symbol = 'R';
-			new_ent.hp = new_ent.max_hp = (int)(15 * mult);
-			new_ent.attack = 0;
-			new_ent.drop_item_id = 2;
-		}
-		else if (type_rand < 90) {
-			new_ent.type = ENT_HEAL;
-			new_ent.symbol = '+';
-			new_ent.hp = new_ent.max_hp = 1;
-			new_ent.attack = 0;
-			new_ent.drop_item_id = 0;
-		}
-		else {
-			new_ent.type = ENT_MONSTER;
-			new_ent.symbol = 'M';
-			new_ent.hp = new_ent.max_hp = (int)(20 * mult);
-			new_ent.attack = (int)(5 * mult);
-			new_ent.drop_item_id = 9;
-		}
-
-		m->entities[m->entity_count++] = new_ent;
-		spawned++;
 	}
 }
 
