@@ -5,7 +5,7 @@
 #include <windows.h>
 
 #define MAX_FARMER_NAME 32
-#define MAX_ITEMS 10
+#define MAX_ITEMS 11
 #define MAX_NAME_LEN 32
 
 typedef enum

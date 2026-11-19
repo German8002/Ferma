@@ -14,7 +14,7 @@ typedef struct
 	int entity_count; //Сколько всего сущностей на этаже
 } Map;
 
-void carve_path(Map* m,char** map, int y1, int x1, int y2, int x2);
+void carve_path(Map* m, char** map, int y1, int x1, int y2, int x2);
 void mirror_map(Map* m, int vertical);
 void print_map(const Map* m, int player_y, int player_x, int vertical, int show_mirror);
 void free_map(Map* m);

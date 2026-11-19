@@ -84,8 +84,8 @@ void print_map(const Map* m, int player_y, int player_x, int vertical, int show_
 	system("cls");
 
 	HANDLE h = GetStdHandle(STD_OUTPUT_HANDLE);
-	const WORD COLOR_NORMAL = FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE; // обычный серый (7)
-	const WORD COLOR_DIM = FOREGROUND_INTENSITY;                                   // тёмно-серый (8)
+	const WORD COLOR_NORMAL = FOREGROUND_RED | FOREGROUND_GREEN | FOREGROUND_BLUE;
+	const WORD COLOR_DIM = FOREGROUND_INTENSITY;
 
 	int height = m->height;
 	int width = m->width;
@@ -136,13 +136,13 @@ void print_map(const Map* m, int player_y, int player_x, int vertical, int show_
 
 void free_map(Map* m)
 {
-	if (m->cells == NULL) return; //Уже освобождено - защита от двойного free
+	if (m->cells == NULL) return;
 
 	for (int i = 0; i < m->height; i++)
 	{
-		free(m->cells[i]); //Освобождаем каждую строку
+		free(m->cells[i]);
 	}
-	free(m->cells); //Освобождаем список адресов строк
+	free(m->cells);
 	m->cells = NULL;
 
 	if (m->entities != NULL)
@@ -156,32 +156,31 @@ void free_map(Map* m)
 	m->height = 0;
 }
 
-// Создаёт новую локацию внутри m. Счётчик m->level не меняется - им управляет вызывающий код.
 void generate_map(Map* m, int* out_y, int* out_x, int* out_vertical, int* out_sy, int* out_sx)
 {
-	int vertical = rand() % 2; //1 - стена вертикальная, 0 - горизонтальная
-	int height = rand() % 26 + 5; //от 5 до 30(Высота)
-	int width = rand() % 26 + 5; //Длина
-	if (vertical) width = (rand() % 12) * 2 + 7; //Делаем длину нечётной для нормального отзеркаливания
-	else height = (rand() % 12) * 2 + 7; //Делаем высоту нечётной для нормального отзеркаливания
-	int mid = vertical ? width / 2 : height / 2; //Номер строчки или столба, по которому идёт сама стена(для зеркала)
+	int vertical = rand() % 2;
+	int height = rand() % 26 + 5;
+	int width = rand() % 26 + 5;
+	if (vertical) width = (rand() % 12) * 2 + 7;
+	else height = (rand() % 12) * 2 + 7;
+	int mid = vertical ? width / 2 : height / 2;
 	m->height = height;
 	m->width = width;
 	*out_vertical = vertical;
 
-	char** map = (char**)malloc(height * sizeof(char*)); //Память под список строк
+	char** map = (char**)malloc(height * sizeof(char*));
 	for (int i = 0; i < height; i++)
 	{
-		map[i] = (char*)malloc(width * sizeof(char)); //Память под каждую строку
+		map[i] = (char*)malloc(width * sizeof(char));
 	}
 	m->cells = map;
 
-	for (int i = 0; i < height; i++)// Наполнение карты
+	for (int i = 0; i < height; i++)
 	{
 		for (int j = 0; j < width; j++)
 		{
 			int on_middle = vertical ? (j == mid) : (i == mid);
-			if (i == 0 || i == height - 1 || j == 0 || j == width - 1 || on_middle)//Выставляем стены
+			if (i == 0 || i == height - 1 || j == 0 || j == width - 1 || on_middle)
 			{
 				map[i][j] = '#';
 			}
@@ -209,7 +208,6 @@ void generate_map(Map* m, int* out_y, int* out_x, int* out_vertical, int* out_sy
 		s_x = rand() % max_x + 1;
 	} while ((s_y == y && s_x == x) || (s_y == u_y && s_x == u_x));
 
-	// Спавним сущности до прокладки дорог
 	int half_area = vertical ? (height * mid) : (mid * width);
 	int target_entities = half_area / 5;
 	int max_entities = height * width;
@@ -252,14 +250,14 @@ void generate_map(Map* m, int* out_y, int* out_x, int* out_vertical, int* out_sy
 
 		int type_rand = rand() % 100;
 		if (type_rand < 40) {
-			new_ent.type = ENT_TREE; //15% дерево(Откуда оно в башне?Ну, я не знаю)
+			new_ent.type = ENT_TREE;
 			new_ent.symbol = 'T';
 			new_ent.hp = new_ent.max_hp = (int)(10 * mult);
 			new_ent.attack = 0;
 			new_ent.drop_item_id = 1;
 		}
 		else if (type_rand < 80) {
-			new_ent.type = ENT_ROCK; //10% камень
+			new_ent.type = ENT_ROCK;
 			new_ent.symbol = 'R';
 			new_ent.hp = new_ent.max_hp = (int)(15 * mult);
 			new_ent.attack = 0;
@@ -278,18 +276,18 @@ void generate_map(Map* m, int* out_y, int* out_x, int* out_vertical, int* out_sy
 			new_ent.hp = new_ent.max_hp = (int)(20 * mult);
 			new_ent.attack = (int)(5 * mult);
 			new_ent.defense = (int)(2 * mult);
-			new_ent.drop_item_id = 9;
+			new_ent.drop_item_id = 10;
 		}
 
 		m->entities[m->entity_count++] = new_ent;
 		spawned++;
 	}
 
-	carve_path(m, y, x, u_y, u_x);//Прокладываем дорогу для U
-	carve_path(m, y, x, s_y, s_x);//Прокладываем дорогу для S
+	carve_path(m, y, x, u_y, u_x);
+	carve_path(m, y, x, s_y, s_x);
 
-	map[y][x] = 'D'; //Лестница вниз под героем — до зеркала
-	map[s_y][s_x] = 'S'; //Переключатель — до зеркала
+	map[y][x] = 'D';
+	map[s_y][s_x] = 'S';
 
 	int placed = 0;
 	int guard = 0;
@@ -324,7 +322,19 @@ void generate_map(Map* m, int* out_y, int* out_x, int* out_vertical, int* out_sy
 				}
 	}
 
-	mirror_map(m, vertical); //Зеркалим
+	mirror_map(m, vertical);
+
+	for (int i = 0; i < height; i++) {
+		for (int j = 0; j < width; j++) {
+			if (map[i][j] == 'D' || map[i][j] == 'S' || map[i][j] == 'U') {
+				for (int k = 0; k < m->entity_count; k++) {
+					if (m->entities[k].is_alive && m->entities[k].x == j && m->entities[k].y == i) {
+						m->entities[k].is_alive = 0;
+					}
+				}
+			}
+		}
+	}
 
 	*out_y = y;
 	*out_x = x;
@@ -339,7 +349,7 @@ void rebuild_right_half(Map* m, int vertical, int player_y, int player_x)
 	int width = m->width;
 	int mid = vertical ? width / 2 : height / 2;
 
-	int u_y = -1, u_x = -1;//Запоминаем, была ли U в перестраиваемой половине и где именно
+	int u_y = -1, u_x = -1;
 	if (vertical)
 	{
 		for (int i = 1; i < height - 1; i++)
@@ -353,12 +363,12 @@ void rebuild_right_half(Map* m, int vertical, int player_y, int player_x)
 				if (map[i][j] == 'U') { u_y = i; u_x = j; }
 	}
 
-	if (vertical)// Убираем разделяющую стену — делаем её проходимой
+	if (vertical)
 		for (int i = 1; i < height - 1; i++) map[i][mid] = '.';
 	else
 		for (int j = 1; j < width - 1; j++) map[mid][j] = '.';
 
-	if (vertical) //Перестраиваем половину
+	if (vertical)
 	{
 		for (int i = 1; i < height - 1; i++)
 			for (int j = mid + 1; j < width - 1; j++)
@@ -375,7 +385,6 @@ void rebuild_right_half(Map* m, int vertical, int player_y, int player_x)
 			}
 	}
 
-	// Удаляем старые сущности из перестроенной половины
 	for (int k = 0; k < m->entity_count; k++)
 	{
 		if (m->entities[k].is_alive)
@@ -385,7 +394,6 @@ void rebuild_right_half(Map* m, int vertical, int player_y, int player_x)
 		}
 	}
 
-	// Спавним новые сущности
 	int half_area = vertical ? (height * (width - mid)) : ((height - mid) * width);
 	int target_entities = half_area / 5;
 
@@ -451,18 +459,18 @@ void rebuild_right_half(Map* m, int vertical, int player_y, int player_x)
 			new_ent.hp = new_ent.max_hp = (int)(20 * mult);
 			new_ent.attack = (int)(5 * mult);
 			new_ent.defense = (int)(2 * mult);
-			new_ent.drop_item_id = 9;
+			new_ent.drop_item_id = 10;
 		}
 
 		m->entities[m->entity_count++] = new_ent;
 		spawned++;
 	}
 
-	if (u_y >= 0)// Если U уже была справа — возвращаем её на место
+	if (u_y >= 0)
 	{
 		map[u_y][u_x] = 'U';
 	}
-	else// U справа не было — создаём новую
+	else
 	{
 		int placed = 0, guard = 0;
 		while (!placed && guard < 10000)
@@ -499,13 +507,12 @@ void rebuild_right_half(Map* m, int vertical, int player_y, int player_x)
 		}
 	}
 
-	// Прорубаем дороги в конце, чтобы они были чистыми
 	if (u_y >= 0)
 	{
 		carve_path(m, player_y, player_x, u_y, u_x);
 		map[u_y][u_x] = 'U';
 
-		int d_y = -1, d_x = -1;//Ищем D, чтобы прорубить дорогу и до него
+		int d_y = -1, d_x = -1;
 		for (int i = 1; i < height - 1; i++)
 			for (int j = 1; j < width - 1; j++)
 				if (map[i][j] == 'D') { d_y = i; d_x = j; }
@@ -513,6 +520,18 @@ void rebuild_right_half(Map* m, int vertical, int player_y, int player_x)
 		{
 			carve_path(m, player_y, player_x, d_y, d_x);
 			map[d_y][d_x] = 'D';
+		}
+	}
+
+	for (int i = 0; i < height; i++) {
+		for (int j = 0; j < width; j++) {
+			if (map[i][j] == 'D' || map[i][j] == 'S' || map[i][j] == 'U') {
+				for (int k = 0; k < m->entity_count; k++) {
+					if (m->entities[k].is_alive && m->entities[k].x == j && m->entities[k].y == i) {
+						m->entities[k].is_alive = 0;
+					}
+				}
+			}
 		}
 	}
 }
@@ -683,7 +702,24 @@ void start_adventure(Player* p, int* day, int* hour)
 					e->is_alive = 0;
 					int gold_reward = 5 * map->level;
 					p->gold += gold_reward;
-					sprintf(message, "Монстр побеждён! +%d золота.", gold_reward);
+
+					char loot_msg[100] = "";
+					if (rand() % 100 < 25)
+					{
+						int added = 0;
+						for (int i = 0; i < MAX_ITEMS; i++)
+						{
+							if (p->inventory[i] == 0)
+							{
+								p->inventory[i] = 10;
+								added = 1;
+								break;
+							}
+						}
+						if (added) sprintf(loot_msg, " И трофей: %s!", item_names[10]);
+						else sprintf(loot_msg, " Рюкзак полон, клык потерян.");
+					}
+					sprintf(message, "Монстр побеждён! +%d золота.%s", gold_reward, loot_msg);
 				}
 				else
 				{

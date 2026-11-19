@@ -161,6 +161,7 @@ void read_file(void)
 	strcpy(item_names[7], "Яйца");
 	strcpy(item_names[8], "Пшеница");
 	strcpy(item_names[9], "Молоко");
+	strcpy(item_names[10], "Клык");
 	FILE* f = fopen("items.txt", "r");
 	if (f == NULL)
 	{
