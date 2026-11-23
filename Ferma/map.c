@@ -1,6 +1,7 @@
 #define _CRT_SECURE_NO_WARNINGS
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 #include <windows.h>
 #include "map.h"
 #include "player.h"
@@ -435,7 +436,7 @@ void rebuild_right_half(Map* m, int vertical, int player_y, int player_x)
 		}
 	}
 
-	// Прорубаем дороги в конце, чтобы они были чистыми
+	// Прорубаем дороги в конце
 	if (u_y >= 0)
 	{
 		carve_path(m, player_y, player_x, u_y, u_x);
@@ -493,6 +494,9 @@ void start_adventure(Player* p, int* day, int* hour)
 	int event_msg = 0;
 	char message[256] = "";
 
+	int total_resources = 0; // Счетчики для отчета
+	int total_monsters = 0;
+
 	while (1)
 	{
 		print_map(map, p->y, p->x, vertical, mirror_active);
@@ -500,16 +504,22 @@ void start_adventure(Player* p, int* day, int* hour)
 		printf("HP: %d/%d | Выносливость: %d/%d | Золото: %d | Атака: %d | Защита: %d\n",
 			p->hp, p->max_hp, p->stamina, p->max_stamina, p->gold, p->attack, p->defense);
 
-		if (event_msg) {
-			printf("\n[СОБЫТИЕ]: %s\n", message);
-			event_msg = 0;
-		}
+		printf("Последнее событие: %s\n", event_msg ? message : "Пока тихо..."); // Вывод последнего события
+		event_msg = 0;
+
 		printf("\nУправление: W-вверх, A-влево, S-вниз, D-вправо, Q-вернуться домой (только на лестнице D)\n");
 
 		printf("Ваш ход: ");
 		char choice;
 		if (scanf(" %c", &choice) != 1)
 		{
+			FILE* f = fopen("diary.txt", "a");
+			if (f) {
+				fprintf(f, "\n=== ОТЧЕТ О ПОХОДЕ ===\n");
+				fprintf(f, "Выход по ошибке ввода. День: %d, Этаж: %d\n", *day, map->level);
+				fprintf(f, "Добыто ресурсов (вкл. трофеи): %d, Побеждено монстров: %d\n", total_resources, total_monsters);
+				fclose(f);
+			}
 			printf("Память структуры по адресу %p освобождена\n", (void*)map);
 			free_map(map);
 			free(map);
@@ -521,6 +531,13 @@ void start_adventure(Player* p, int* day, int* hour)
 		{
 			if (map->cells[p->y][p->x] == 'D')
 			{
+				FILE* f = fopen("diary.txt", "a");
+				if (f) {
+					fprintf(f, "\n=== ОТЧЕТ О ПОХОДЕ ===\n");
+					fprintf(f, "Выход по Q. День: %d, Этаж: %d\n", *day, map->level);
+					fprintf(f, "Добыто ресурсов (вкл. трофеи): %d, Побеждено монстров: %d\n", total_resources, total_monsters);
+					fclose(f);
+				}
 				printf("Память структуры по адресу %p освобождена\n", (void*)map);
 				free_map(map);
 				free(map);
@@ -559,7 +576,6 @@ void start_adventure(Player* p, int* day, int* hour)
 					if (vertical) check_x = map->width - 1 - next_x;
 					else check_y = map->height - 1 - next_y;
 				}
-
 				if (map->entities[k].x == check_x && map->entities[k].y == check_y)
 				{
 					ent_index = k;
@@ -578,6 +594,15 @@ void start_adventure(Player* p, int* day, int* hour)
 			Entity* e = &map->entities[ent_index];
 			entity_damage(e, p, message);
 			event_msg = 1;
+			if (strstr(message, "Монстр побеждён") != NULL)
+			{
+				total_monsters++;
+			}
+
+			if (strstr(message, "получили:") != NULL)
+			{
+				total_resources++;
+			}
 		}
 		else
 		{
@@ -628,6 +653,15 @@ void start_adventure(Player* p, int* day, int* hour)
 		{
 			system("cls");
 			printf("\nВы погибли! Игра окончена.\n");
+
+			FILE* f = fopen("diary.txt", "a");
+			if (f) {
+				fprintf(f, "\n=== ОТЧЕТ О ПОХОДЕ (ГИБЕЛЬ) ===\n");
+				fprintf(f, "Погиб. День: %d, Этаж: %d\n", *day, map->level);
+				fprintf(f, "Добыто ресурсов (вкл. трофеи): %d, Побеждено монстров: %d\n", total_resources, total_monsters);
+				fclose(f);
+			}
+
 			printf("Память структуры по адресу %p освобождена\n", (void*)map);
 			free_map(map);
 			free(map);
@@ -646,6 +680,14 @@ void start_adventure(Player* p, int* day, int* hour)
 			int lost = p->gold / 2;
 			p->gold -= lost;
 			printf("За услуги забрали %d золота. Осталось %d.\n", lost, p->gold);
+
+			FILE* f = fopen("diary.txt", "a");
+			if (f) {
+				fprintf(f, "\n=== ОТЧЕТ О ПОХОДЕ (ЭВАКУАЦИЯ) ===\n");
+				fprintf(f, "Эвакуация. День: %d, Этаж: %d\n", *day, map->level);
+				fprintf(f, "Добыто ресурсов: %d, Побеждено монстров: %d\n", total_resources, total_monsters);
+				fclose(f);
+			}
 
 			printf("Память структуры по адресу %p освобождена\n", (void*)map);
 			free_map(map);

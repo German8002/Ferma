@@ -118,7 +118,7 @@ void entity_damage(Entity* e, Player* p, char* out_message)
 						break;
 					}
 				}
-				if (added) sprintf(loot_msg, " И трофей: %s!", item_names[10]);
+				if (added) sprintf(loot_msg, " И получили: %s!", item_names[10]);
 				else sprintf(loot_msg, " Рюкзак полон, клык потерян.");
 			}
 			sprintf(out_message, "Монстр побеждён! +%d золота.%s", gold_reward, loot_msg);
