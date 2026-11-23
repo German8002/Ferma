@@ -436,7 +436,7 @@ void rebuild_right_half(Map* m, int vertical, int player_y, int player_x)
 		}
 	}
 
-	// Прорубаем дороги в конце
+	// Прорубаем дороги в конце, чтобы они были чистыми
 	if (u_y >= 0)
 	{
 		carve_path(m, player_y, player_x, u_y, u_x);
@@ -527,6 +527,17 @@ void start_adventure(Player* p, int* day, int* hour)
 		}
 		clear_buffer();
 
+		if (choice != 'w' && choice != 'W' &&
+			choice != 'a' && choice != 'A' &&
+			choice != 's' && choice != 'S' &&
+			choice != 'd' && choice != 'D' &&
+			choice != 'q' && choice != 'Q')
+		{
+			sprintf(message, "Неизвестная команда. Используйте W, A, S, D или Q.");
+			event_msg = 1;
+			continue;
+		}
+
 		if (choice == 'q' || choice == 'Q')
 		{
 			if (map->cells[p->y][p->x] == 'D')
@@ -576,6 +587,7 @@ void start_adventure(Player* p, int* day, int* hour)
 					if (vertical) check_x = map->width - 1 - next_x;
 					else check_y = map->height - 1 - next_y;
 				}
+
 				if (map->entities[k].x == check_x && map->entities[k].y == check_y)
 				{
 					ent_index = k;
@@ -592,16 +604,19 @@ void start_adventure(Player* p, int* day, int* hour)
 		else if (ent_index != -1)
 		{
 			Entity* e = &map->entities[ent_index];
-			entity_damage(e, p, message);
+
+			entity_damage(e, p, message); // Просто бьем сущность, а всю инфу о луте и смерти она сама запишет в message
 			event_msg = 1;
+
+			// А теперь считаем по тексту события!
 			if (strstr(message, "Монстр побеждён") != NULL)
 			{
 				total_monsters++;
+				if (strstr(message, "трофей") != NULL) total_resources++; // Если в тексте есть "трофей" — значит, выпал Клык. Это тоже ресурс!
 			}
-
-			if (strstr(message, "получили:") != NULL)
+			else if (strstr(message, "получили:") != NULL)
 			{
-				total_resources++;
+				total_resources++; // Если в тексте есть "получили:" — значит, срубили дерево или камень
 			}
 		}
 		else
@@ -649,6 +664,57 @@ void start_adventure(Player* p, int* day, int* hour)
 			}
 		}
 
+		// Блуждающие хищники: каждый монстр делает случайный шаг
+		for (int k = 0; k < map->entity_count; k++)
+		{
+			if (map->entities[k].is_alive && map->entities[k].type == ENT_MONSTER) // Двигаем только живых монстров
+			{
+				Entity* m = &map->entities[k];
+
+				int dir = rand() % 4; // Выбираем случайное направление: 0 - вверх, 1 - вниз, 2 - влево, 3 - вправо
+				int nx = m->x;
+				int ny = m->y;
+
+				if (dir == 0) ny--;
+				else if (dir == 1) ny++;
+				else if (dir == 2) nx--;
+				else if (dir == 3) nx++;
+
+				if (nx > 0 && nx < map->width - 1 && ny > 0 && ny < map->height - 1) // Проверяем, не вышли ли за границы карты
+				{
+					if (nx == p->x && ny == p->y) // Если монстр хочет шагнуть прямо на игрока
+					{
+						int mon_dmg = m->attack - (p->defense / 2);
+						if (mon_dmg < 1) mon_dmg = 1;
+						p->hp -= mon_dmg;
+
+						sprintf(message, "Монстр набросился на вас (-%d HP)!", mon_dmg); // Сообщаем игроку об этом
+						event_msg = 1;
+					}
+					else
+					{
+						int blocked = 0; // Проверяем, свободна ли клетка (нет стен и других сущностей)
+						if (map->cells[ny][nx] == '#') blocked = 1;
+
+						for (int j = 0; j < map->entity_count; j++)
+						{
+							if (map->entities[j].is_alive && map->entities[j].x == nx && map->entities[j].y == ny)
+							{
+								blocked = 1;
+								break;
+							}
+						}
+
+						if (!blocked) // Если путь свободен — двигаем монстра
+						{
+							m->x = nx;
+							m->y = ny;
+						}
+					}
+				}
+			}
+		}
+
 		if (p->hp <= 0)
 		{
 			system("cls");
@@ -685,7 +751,7 @@ void start_adventure(Player* p, int* day, int* hour)
 			if (f) {
 				fprintf(f, "\n=== ОТЧЕТ О ПОХОДЕ (ЭВАКУАЦИЯ) ===\n");
 				fprintf(f, "Эвакуация. День: %d, Этаж: %d\n", *day, map->level);
-				fprintf(f, "Добыто ресурсов: %d, Побеждено монстров: %d\n", total_resources, total_monsters);
+				fprintf(f, "Добыто ресурсов (вкл. трофеи): %d, Побеждено монстров: %d\n", total_resources, total_monsters);
 				fclose(f);
 			}
 
