@@ -517,7 +517,7 @@ void start_adventure(Player* p, int* day, int* hour)
 			if (f) {
 				fprintf(f, "\n=== ОТЧЁТ О ПОХОДЕ ===\n");
 				fprintf(f, "Выход по ошибке ввода. День: %d, Этаж: %d\n", *day, map->level);
-				fprintf(f, "Добыто ресурсов (вкл. трофеи): %d, Побеждено монстров: %d\n", total_resources, total_monsters);
+				fprintf(f, "Добыто ресурсов: %d, Побеждено монстров: %d\n", total_resources, total_monsters);
 				fclose(f);
 			}
 			printf("Память структуры по адресу %p освобождена\n", (void*)map);
@@ -546,7 +546,7 @@ void start_adventure(Player* p, int* day, int* hour)
 				if (f) {
 					fprintf(f, "\n=== ОТЧЁТ О ПОХОДЕ ===\n");
 					fprintf(f, "Выход по Q. День: %d, Этаж: %d\n", *day, map->level);
-					fprintf(f, "Добыто ресурсов (вкл. трофеи): %d, Побеждено монстров: %d\n", total_resources, total_monsters);
+					fprintf(f, "Добыто ресурсов: %d, Побеждено монстров: %d\n", total_resources, total_monsters);
 					fclose(f);
 				}
 				printf("Память структуры по адресу %p освобождена\n", (void*)map);
@@ -608,11 +608,9 @@ void start_adventure(Player* p, int* day, int* hour)
 			entity_damage(e, p, message); // Просто бьем сущность, а всю инфу о луте и смерти она сама запишет в message
 			event_msg = 1;
 
-			// А теперь считаем по тексту события!
 			if (strstr(message, "Монстр побеждён") != NULL)
 			{
 				total_monsters++;
-				if (strstr(message, "трофей") != NULL) total_resources++; // Если в тексте есть "трофей" — значит, выпал Клык. Это тоже ресурс!
 			}
 			else if (strstr(message, "получили:") != NULL)
 			{
@@ -724,7 +722,7 @@ void start_adventure(Player* p, int* day, int* hour)
 			if (f) {
 				fprintf(f, "\n=== ОТЧЁТ О ПОХОДЕ (ГИБЕЛЬ) ===\n");
 				fprintf(f, "Погиб. День: %d, Этаж: %d\n", *day, map->level);
-				fprintf(f, "Добыто ресурсов (вкл. трофеи): %d, Побеждено монстров: %d\n", total_resources, total_monsters);
+				fprintf(f, "Добыто ресурсов: %d, Побеждено монстров: %d\n", total_resources, total_monsters);
 				fclose(f);
 			}
 
