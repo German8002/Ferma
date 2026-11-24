@@ -494,7 +494,7 @@ void start_adventure(Player* p, int* day, int* hour)
 	int event_msg = 0;
 	char message[256] = "";
 
-	int total_resources = 0; // Счетчики для отчета
+	int total_resources = 0; // Счетчики для отчёта
 	int total_monsters = 0;
 
 	while (1)
@@ -515,7 +515,7 @@ void start_adventure(Player* p, int* day, int* hour)
 		{
 			FILE* f = fopen("diary.txt", "a");
 			if (f) {
-				fprintf(f, "\n=== ОТЧЕТ О ПОХОДЕ ===\n");
+				fprintf(f, "\n=== ОТЧЁТ О ПОХОДЕ ===\n");
 				fprintf(f, "Выход по ошибке ввода. День: %d, Этаж: %d\n", *day, map->level);
 				fprintf(f, "Добыто ресурсов (вкл. трофеи): %d, Побеждено монстров: %d\n", total_resources, total_monsters);
 				fclose(f);
@@ -544,7 +544,7 @@ void start_adventure(Player* p, int* day, int* hour)
 			{
 				FILE* f = fopen("diary.txt", "a");
 				if (f) {
-					fprintf(f, "\n=== ОТЧЕТ О ПОХОДЕ ===\n");
+					fprintf(f, "\n=== ОТЧЁТ О ПОХОДЕ ===\n");
 					fprintf(f, "Выход по Q. День: %d, Этаж: %d\n", *day, map->level);
 					fprintf(f, "Добыто ресурсов (вкл. трофеи): %d, Побеждено монстров: %d\n", total_resources, total_monsters);
 					fclose(f);
@@ -722,7 +722,7 @@ void start_adventure(Player* p, int* day, int* hour)
 
 			FILE* f = fopen("diary.txt", "a");
 			if (f) {
-				fprintf(f, "\n=== ОТЧЕТ О ПОХОДЕ (ГИБЕЛЬ) ===\n");
+				fprintf(f, "\n=== ОТЧЁТ О ПОХОДЕ (ГИБЕЛЬ) ===\n");
 				fprintf(f, "Погиб. День: %d, Этаж: %d\n", *day, map->level);
 				fprintf(f, "Добыто ресурсов (вкл. трофеи): %d, Побеждено монстров: %d\n", total_resources, total_monsters);
 				fclose(f);
@@ -749,9 +749,9 @@ void start_adventure(Player* p, int* day, int* hour)
 
 			FILE* f = fopen("diary.txt", "a");
 			if (f) {
-				fprintf(f, "\n=== ОТЧЕТ О ПОХОДЕ (ЭВАКУАЦИЯ) ===\n");
+				fprintf(f, "\n=== ОТЧЁТ О ПОХОДЕ (ЭВАКУАЦИЯ) ===\n");
 				fprintf(f, "Эвакуация. День: %d, Этаж: %d\n", *day, map->level);
-				fprintf(f, "Добыто ресурсов (вкл. трофеи): %d, Побеждено монстров: %d\n", total_resources, total_monsters);
+				fprintf(f, "Добыто ресурсов:%d, Побеждено монстров: %d\n", total_resources, total_monsters);
 				fclose(f);
 			}
 
